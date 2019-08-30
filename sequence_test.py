@@ -1,0 +1,63 @@
+import unittest
+from amino_acid import AminoAcid
+from modification import Modification
+from sequence import Sequence, ModdedSequenceGenerator
+
+nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True)
+osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)
+sulfation = Modification("Sulfation",regex_pattern="S", mod_type="variable", labile=True)
+carbox = Modification("Carboxylation",regex_pattern="E", mod_type="variable", labile=True)
+propiona = Modification("Propionamide", regex_pattern="C", mod_type="static")
+
+class TestAASequence(unittest.TestCase):
+    def test_normal_sequence(self):
+        seq = Sequence("TESTEST")
+        print(seq.seq)
+
+    def test_mod_rightseq(self):
+        seq = Sequence("TEN[HexNAc]ST")
+        for i in seq.seq:
+            print(i, i.mods)
+
+    def test_two_mod_rightseq(self):
+        seq = Sequence("TEN[HexNAc][HexNAc]ST")
+        for i in seq.seq:
+            print(i, i.mods)
+
+    def test_mod_leftseq(self):
+        seq = Sequence("TE[HexNAc]NST", mod_position="left")
+        for i in seq.seq:
+            print(i, i.mods)
+
+    def test_two_mod_leftseq(self):
+        seq = Sequence("TE[HexNAc][HexNAc]NST", mod_position="left")
+        for i in seq.seq:
+            print(i, i.mods)
+
+
+class TestModdedSequence(unittest.TestCase):
+    def test_variable_mod_generator(self):
+        seq = "TESNSTT"
+        mods = [nsequon, osequon, carbox]
+        g = ModdedSequenceGenerator(seq, mods, [])
+        print(g.variable_map.mod_position_dict)
+        for i in g.variable_mod_generator():
+            print(i)
+
+    def test_static_mod_generator(self):
+        seq = "TECSNTT"
+        mods = [propiona]
+        g = ModdedSequenceGenerator(seq, static_mods=mods)
+        for i in g.generate():
+            print(i)
+
+    def test_static_and_variable_mod_generator(self):
+        seq = "TECSNTT"
+        static_mods = [propiona]
+        variable_mods = [nsequon, osequon, carbox]
+        g = ModdedSequenceGenerator(seq, variable_mods, static_mods)
+        for i in g.generate():
+            print(i)
+
+if __name__ == '__main__':
+    unittest.main()

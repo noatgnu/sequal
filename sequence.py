@@ -1,0 +1,211 @@
+import re
+from amino_acid import AminoAcid
+from modification import Modification, ModificationMap
+from copy import deepcopy
+import itertools
+from json import dumps
+mod_pattern = re.compile(r"[\(|\[]+([^\)]+)[\)|\]]+")
+mod_enclosure_start = {"(", "[", "{"}
+mod_enclosure_end = {")", "]", "}"}
+
+
+class Sequence:
+    def __init__(self, seq, encoder=AminoAcid, mods=None, parser_ignore=None, mod_position="right"):
+        """
+        :param mod_position
+        Indicate the position of the modifications relative to the base block it is supposed to modify
+        :type mod_position: str
+        :param mods
+        Dictionary whose keys are the positions within the sequence and values are array of modifications at those
+        positions
+        :type mods: dict
+        :param encoder
+        Class for encoding of sequence.
+        :type encoder: BaseBlock
+        :param seq
+        String or array of strings. The parser will recursively look over each string at deepest level and identify
+        :type seq: iterable
+        Python iterable where the deepest level is a string
+            
+        """
+        if not mods:
+            self.mods = {}
+        else:
+            self.mods = mods
+        self.encoder = encoder
+        if not parser_ignore:
+            self.parser_ignore = []
+        else:
+            self.parser_ignore = parser_ignore
+        self.seq = []
+        current_unit = None
+        current_mod = []
+        current_position = 0
+
+        for b, m in self.__load_sequence_iter(iter(seq)):
+            if not m:
+                if mod_position == "left":
+                    current_unit = self.encoder(b, current_position)
+                    if current_mod and not mods:
+                        for i in current_mod:
+                            current_unit.set_modification(i)
+                    elif current_position in self.mods and current_unit:
+                        if type(self.mods[current_position]) == Modification:
+                            current_unit.set_modification(self.mods[current_position])
+                        else:
+                            for mod in self.mods[current_position]:
+                                current_unit.set_modification(mod)
+                    self.seq.append(deepcopy(current_unit))
+                    current_mod = []
+                if mod_position == "right":
+                    if current_mod and not mods:
+                        for i in current_mod:
+                            self.seq[current_position - 1].set_modification(i)
+
+                    current_unit = self.encoder(b, current_position)
+                    if current_position in self.mods and current_unit:
+                        if type(self.mods[current_position]) == Modification:
+                            current_unit.set_modification(self.mods[current_position])
+                        else:
+                            for mod in self.mods[current_position]:
+                                current_unit.set_modification(mod)
+                    self.seq.append(deepcopy(current_unit))
+
+                    current_mod = []
+                current_position += 1
+            else:
+                if not mods:
+                    current_mod.append(Modification(b, current_position))
+
+        self.seq_length = len(self.seq)
+
+    def __load_sequence_iter(self, seq):
+        mod_open = 0
+        block = ""
+        mod = False
+        for i in seq:
+
+            if type(i) == str:
+                if i in mod_enclosure_start:
+                    mod = True
+                    mod_open += 1
+                elif i in mod_enclosure_end:
+                    mod_open -= 1
+                block += i
+            else:
+                yield from self.__load_sequence_iter(seq)
+            if mod_open == 0:
+                yield (block, mod)
+                mod = False
+                block = ""
+
+    def __iter__(self):
+        self.current_iter_count = 0
+        return self
+
+    def __next__(self):
+        if self.current_iter_count == self.seq_length:
+            raise StopIteration
+        result = self.seq[self.current_iter_count]
+        self.current_iter_count += 1
+        return result
+
+    def add_modifications(self, mod_dict):
+        for aa in self.seq:
+            if aa.position in mod_dict:
+                for mod in mod_dict[aa.position]:
+                    aa.set_modification(mod)
+
+    def to_stripped_string(self):
+        seq = ""
+        for i in self.seq:
+            seq += i.value
+        return seq
+
+
+def count_unique_elements(seq):
+    elements = {}
+    for i in seq:
+        if i.value not in elements:
+            elements[i.value] = 0
+        elements[i.value] += 1
+        if i.mods:
+            for m in i.mods:
+                if m.value not in elements:
+                    elements[m.value] = 0
+                elements[m.value] += 1
+    return elements
+
+
+def variable_position_placement_generator(positions):
+    for i in itertools.product([0, 1], repeat=len(positions)):
+        yield list(itertools.compress(positions, i))
+
+
+def ordered_serialize_position_dict(positions):
+    return dumps(positions, sort_keys=True, default=str)
+
+
+class ModdedSequenceGenerator:
+    def __init__(self, seq, variable_mods=None, static_mods=None, used_scenarios=None):
+        self.seq = seq
+        if static_mods:
+            self.static_mods = static_mods
+            self.static_map = ModificationMap(seq, static_mods)
+            self.static_mod_position_dict = self.static_mod_generate()
+        else:
+            self.static_mod_position_dict = {}
+
+        if variable_mods:
+            self.variable_mods = variable_mods
+            if self.static_mod_position_dict:
+                self.variable_map = ModificationMap(seq, variable_mods, ignore_positions=set(self.static_mod_position_dict.keys()))
+            else:
+                self.variable_map = ModificationMap(seq, variable_mods)
+            self.variable_mod_number = len(variable_mods)
+        else:
+            self.variable_mods = None
+
+        self.variable_map_scenarios = {}
+        if used_scenarios:
+            self.used_scenarios_set = used_scenarios
+        else:
+            self.used_scenarios_set = set()
+
+    def generate(self):
+        if self.variable_mods:
+            for i in self.variable_mod_generator():
+                a = dict(self.static_mod_position_dict)
+                a.update(i)
+                serialized_a = ordered_serialize_position_dict(a)
+                if serialized_a not in self.used_scenarios_set:
+                    yield a
+        else:
+            serialized_a = ordered_serialize_position_dict(self.static_mod_position_dict)
+            if serialized_a not in self.used_scenarios_set:
+                yield self.static_mod_position_dict
+
+    def static_mod_generate(self):
+        position_dict = {}
+        for m in self.static_mods:
+            for pm in self.static_map.get_mod_positions(m.value):
+                position_dict[pm] = m
+        return position_dict
+
+    def variable_mod_generator(self, current_mod=0, mod_collection=None):
+        for i in range(current_mod, self.variable_mod_number, 1):
+            if i == 0:
+                mod_collection = {}
+            positions = self.variable_map.get_mod_positions(self.variable_mods[i].value)
+            if self.variable_mods[i].value not in self.variable_map_scenarios:
+                self.variable_map_scenarios[self.variable_mods[i].value] = list(
+                        variable_position_placement_generator(positions))
+            for pos in self.variable_map_scenarios[self.variable_mods[i].value]:
+                a = dict(mod_collection)
+                for p in pos:
+                    a[p] = self.variable_mods[i]
+                if current_mod == self.variable_mod_number - 1:
+                    yield a
+                else:
+                    yield from self.variable_mod_generator(current_mod + 1, a)
+
