@@ -7,6 +7,7 @@ nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable",
 osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)
 sulfation = Modification("Sulfation",regex_pattern="S", mod_type="variable", labile=True)
 carbox = Modification("Carboxylation",regex_pattern="E", mod_type="variable", labile=True)
+carbox2 = Modification("Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983)
 propiona = Modification("Propionamide", regex_pattern="C", mod_type="static")
 
 class TestAASequence(unittest.TestCase):
@@ -41,7 +42,7 @@ class TestModdedSequence(unittest.TestCase):
         mods = [nsequon, osequon, carbox]
         g = ModdedSequenceGenerator(seq, mods, [])
         print(g.variable_map.mod_position_dict)
-        for i in g.variable_mod_generator():
+        for i in g.generate():
             print(i)
 
     def test_static_mod_generator(self):
@@ -54,7 +55,7 @@ class TestModdedSequence(unittest.TestCase):
     def test_static_and_variable_mod_generator(self):
         seq = "TECSNTT"
         static_mods = [propiona]
-        variable_mods = [nsequon, osequon, carbox]
+        variable_mods = [nsequon, osequon, carbox, carbox2]
         g = ModdedSequenceGenerator(seq, variable_mods, static_mods)
         for i in g.generate():
             print(i)

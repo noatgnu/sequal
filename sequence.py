@@ -38,7 +38,6 @@ class Sequence:
         else:
             self.parser_ignore = parser_ignore
         self.seq = []
-        current_unit = None
         current_mod = []
         current_position = 0
 
@@ -123,6 +122,8 @@ class Sequence:
         return seq
 
 
+
+
 def count_unique_elements(seq):
     elements = {}
     for i in seq:
@@ -174,11 +175,13 @@ class ModdedSequenceGenerator:
 
     def generate(self):
         if self.variable_mods:
-            for i in self.variable_mod_generator():
+            self.variable_mod_generate_scenarios()
+            for i in self.explore_scenarios():
                 a = dict(self.static_mod_position_dict)
                 a.update(i)
                 serialized_a = ordered_serialize_position_dict(a)
                 if serialized_a not in self.used_scenarios_set:
+                    self.used_scenarios_set.add(serialized_a)
                     yield a
         else:
             serialized_a = ordered_serialize_position_dict(self.static_mod_position_dict)
@@ -189,23 +192,35 @@ class ModdedSequenceGenerator:
         position_dict = {}
         for m in self.static_mods:
             for pm in self.static_map.get_mod_positions(m.value):
-                position_dict[pm] = m
+                if pm not in position_dict:
+                    position_dict[pm] = []
+                position_dict[pm].append(m)
         return position_dict
 
-    def variable_mod_generator(self, current_mod=0, mod_collection=None):
-        for i in range(current_mod, self.variable_mod_number, 1):
-            if i == 0:
-                mod_collection = {}
-            positions = self.variable_map.get_mod_positions(self.variable_mods[i].value)
-            if self.variable_mods[i].value not in self.variable_map_scenarios:
-                self.variable_map_scenarios[self.variable_mods[i].value] = list(
-                        variable_position_placement_generator(positions))
-            for pos in self.variable_map_scenarios[self.variable_mods[i].value]:
-                a = dict(mod_collection)
+    def variable_mod_generate_scenarios(self):
+        for i in self.variable_mods:
+            positions = self.variable_map.get_mod_positions(i.value)
+            if i.value not in self.variable_map_scenarios:
+                self.variable_map_scenarios[i.value] = list(
+                    variable_position_placement_generator(positions))
+
+    def explore_scenarios(self, current_mod=0, mod=None):
+        if mod is None:
+            mod = {}
+        for pos in self.variable_map_scenarios[self.variable_mods[current_mod].value]:
+            temp_dict = deepcopy(mod)
+            if pos:
                 for p in pos:
-                    a[p] = self.variable_mods[i]
-                if current_mod == self.variable_mod_number - 1:
-                    yield a
+                    if p not in temp_dict:
+                        temp_dict[p] = [self.variable_mods[current_mod]]
+                    if current_mod != self.variable_mod_number - 1:
+                        yield from self.explore_scenarios(current_mod + 1, temp_dict)
+                    else:
+                        yield temp_dict
+            else:
+                if current_mod != self.variable_mod_number - 1:
+                    yield from self.explore_scenarios(current_mod + 1, temp_dict)
                 else:
-                    yield from self.variable_mod_generator(current_mod + 1, a)
+                    yield temp_dict
+
 
