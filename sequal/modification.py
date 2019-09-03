@@ -1,10 +1,10 @@
 import re
 
-from base_block import BaseBlock
+from sequal.base_block import BaseBlock
 
 
 class Modification(BaseBlock):
-    def __init__(self, value, position=None, regex_pattern=None, full_name=None, mod_type="static", labile=False, labile_number=0, mass=None):
+    def __init__(self, value, position=None, regex_pattern=None, full_name=None, mod_type="static", labile=False, labile_number=0, mass=0):
         """
         :param position
         Position of the modification on the block it belongs to. Should be int and not None if it is assigned to a

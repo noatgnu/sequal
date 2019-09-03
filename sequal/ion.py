@@ -1,4 +1,4 @@
-from sequence import Sequence
+from sequal.sequence import Sequence
 
 
 class Ion(Sequence):

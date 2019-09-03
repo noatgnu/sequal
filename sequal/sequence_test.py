@@ -1,7 +1,7 @@
 import unittest
-from amino_acid import AminoAcid
-from modification import Modification
-from sequence import Sequence, ModdedSequenceGenerator
+
+from sequal.modification import Modification
+from sequal.sequence import Sequence, ModdedSequenceGenerator
 
 nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True)
 osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)

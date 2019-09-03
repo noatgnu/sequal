@@ -1,5 +1,5 @@
-from base_block import BaseBlock
-from modification import Modification
+from sequal.base_block import BaseBlock
+from sequal.modification import Modification
 
 AA_mass = {"A": 71.037114,
            "R":	156.101111,

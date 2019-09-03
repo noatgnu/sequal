@@ -1,4 +1,4 @@
-from ion import Ion
+from sequal.ion import Ion
 
 ax = "ax"
 by = "by"

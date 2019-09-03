@@ -1,6 +1,6 @@
 import re
-from amino_acid import AminoAcid
-from modification import Modification, ModificationMap
+from sequal.amino_acid import AminoAcid
+from sequal.modification import Modification, ModificationMap
 from copy import deepcopy
 import itertools
 from json import dumps

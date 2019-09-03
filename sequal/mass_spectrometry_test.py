@@ -1,8 +1,8 @@
 import unittest
 
-from mass_spectrometry import fragment_non_labile, fragment_labile
-from modification import Modification
-from sequence import ModdedSequenceGenerator, Sequence
+from sequal.mass_spectrometry import fragment_non_labile, fragment_labile
+from sequal.modification import Modification
+from sequal.sequence import ModdedSequenceGenerator, Sequence
 
 nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True, labile_number=1)
 osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)

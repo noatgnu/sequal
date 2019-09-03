@@ -1,3 +1,9 @@
-## SEQUAL / seq=
+# SEQUAL / seq=
 
-Sequal is developed as a python package for reading sequence information including modifications.
+Sequal is developed as a python package for in-silico generation of modified sequences from a sequence input and modifications.
+
+## Dependencies
+
+`None.`
+
+## Usage
