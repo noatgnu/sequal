@@ -10,10 +10,12 @@ carbox = Modification("Carboxylation",regex_pattern="E", mod_type="variable", la
 carbox2 = Modification("Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983)
 propiona = Modification("Propionamide", regex_pattern="C", mod_type="static")
 
+
 class TestAASequence(unittest.TestCase):
     def test_normal_sequence(self):
         seq = Sequence("TESTEST")
         print(seq.seq)
+        print(seq[0:2])
 
     def test_mod_rightseq(self):
         seq = Sequence("TEN[HexNAc]ST")

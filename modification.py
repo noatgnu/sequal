@@ -4,7 +4,7 @@ from base_block import BaseBlock
 
 
 class Modification(BaseBlock):
-    def __init__(self, value, position=None, regex_pattern=None, full_name=None, mod_type="static", labile=False, mass=None):
+    def __init__(self, value, position=None, regex_pattern=None, full_name=None, mod_type="static", labile=False, labile_number=0, mass=None):
         """
         :param position
         Position of the modification on the block it belongs to. Should be int and not None if it is assigned to a
@@ -24,6 +24,7 @@ class Modification(BaseBlock):
 
         assert(type(labile) == bool)
         self.labile = labile
+        self.labile_number = labile_number
         self.full_name = full_name
 
     def __repr__(self):
