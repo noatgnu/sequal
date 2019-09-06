@@ -1,8 +1,8 @@
 import unittest
 
-from mass import calculate_mass
-from modification import Modification
-from sequence import ModdedSequenceGenerator, Sequence
+from sequal.mass import calculate_mass
+from sequal.modification import Modification
+from sequal.sequence import ModdedSequenceGenerator, Sequence
 
 nsequon = Modification("HexNAc", regex_pattern="N[^P][S|T]", mod_type="variable", labile=True, mass=203.0794)
 osequon = Modification("Mannose", regex_pattern="[S|T]", mod_type="variable", labile=True, mass=162.05)

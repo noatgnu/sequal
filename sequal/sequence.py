@@ -1,4 +1,6 @@
 import re
+from typing import Set, Any, List
+
 from sequal.amino_acid import AminoAcid
 from sequal.modification import Modification, ModificationMap
 from copy import deepcopy
@@ -10,6 +12,8 @@ mod_enclosure_end = {")", "]", "}"}
 
 
 class Sequence:
+    seq: List[Any]
+
     def __init__(self, seq, encoder=AminoAcid, mods=None, parse=True, parser_ignore=None, mod_position="right"):
         """
         :param mod_position
@@ -75,13 +79,14 @@ class Sequence:
         :param mods: external modification input
         :param mod_position: modification position relative to the modified residue
         :param current_position: current iterating amino acid position from the input sequence
-        :type current_mod: Modification
+        :type current_mod: List[Modification]
         """
         for b, m in self.__load_sequence_iter(iter(seq)):
             if not m:
                 if mod_position == "left":
                     if type(b) == AminoAcid:
                         current_unit = b
+                        current_unit.position = current_position
                     else:
                         current_unit = self.encoder(b, current_position)
 
@@ -104,6 +109,7 @@ class Sequence:
                             self.seq[current_position - 1].set_modification(i)
                     if type(b) == AminoAcid:
                         current_unit = b
+                        current_unit.position = current_position
                     else:
                         current_unit = self.encoder(b, current_position)
                     if current_position in self.mods and current_unit:
@@ -118,7 +124,7 @@ class Sequence:
                 current_position += 1
             else:
                 if not mods:
-                    current_mod.append(Modification(b))
+                    current_mod.append(Modification(b[1:-1]))
 
     def __load_sequence_iter(self, seq=None, iter_seq=None):
         mod_open = 0
@@ -161,10 +167,34 @@ class Sequence:
                     aa.set_modification(mod)
 
     def to_stripped_string(self):
+        """
+        Return string of the sequence without any modification annotation
+        :return: str
+        """
         seq = ""
         for i in self.seq:
             seq += i.value
         return seq
+
+    def to_string_customize(self, data, annotation_placement, block_separator="", annotation_enclose_characters=("[", "]"),
+                            individual_annotation_enclose=False, individual_annotation_enclose_characters=("[", "]"),
+                            individual_annotation_separator=""):
+        assert annotation_placement in {"left", "right"}
+        seq = []
+        for i in range(len(self.seq)):
+            seq.append(self.seq[i].value)
+            if i in data:
+                annotation = []
+                if individual_annotation_enclose:
+                    for v in data[i]:
+                        annotation.append("{}{}{}".format(individual_annotation_enclose_characters[0], v, individual_annotation_enclose_characters[1]))
+                else:
+                    annotation = data[i]
+                if annotation_enclose_characters:
+                    seq.append("{}{}{}".format(annotation_enclose_characters[0], individual_annotation_separator.join(annotation), annotation_enclose_characters[1]))
+                else:
+                    seq.append(individual_annotation_separator.join(annotation))
+        return block_separator.join(seq)
 
 
 def count_unique_elements(seq):
@@ -182,6 +212,14 @@ def count_unique_elements(seq):
 
 
 def variable_position_placement_generator(positions):
+    """
+    Use itertools.product to generate a list of tuple with different number of 0 and 1. The length of the tuple is the
+    length of the input positions.
+    Using itertools.compress, for each output from itertools.product pairing with input positions, we generate a list of
+    positions where only those with the same index as 1 would be yielded.
+
+    :param positions: list of all identified positions for the modification on the sequence
+    """
     for i in itertools.product([0, 1], repeat=len(positions)):
         yield list(itertools.compress(positions, i))
 
@@ -191,7 +229,17 @@ def ordered_serialize_position_dict(positions):
 
 
 class ModdedSequenceGenerator:
+    used_scenarios_set: Set[str]
+
     def __init__(self, seq, variable_mods=None, static_mods=None, used_scenarios=None):
+        """
+        Generator for creating modified sequences.
+
+        :type used_scenarios: set
+        :type static_mods: List[Modification]
+        :type variable_mods: List[Modification]
+        :type seq: str
+        """
         self.seq = seq
         if static_mods:
             self.static_mods = static_mods
@@ -241,6 +289,11 @@ class ModdedSequenceGenerator:
         return position_dict
 
     def variable_mod_generate_scenarios(self):
+        """
+        Recursively generating all possible position compositions for each variable modification and add them to
+        self.variable_map_scenarios dictionary where key is the value attr of the modification while the value is the
+        position list
+        """
         for i in self.variable_mods:
             positions = self.variable_map.get_mod_positions(i.value)
             if i.value not in self.variable_map_scenarios:

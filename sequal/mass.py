@@ -1,8 +1,8 @@
-from amino_acid import AminoAcid
-from sequence import Sequence
+from sequal.amino_acid import AminoAcid
+from sequal.sequence import Sequence
 
 
-def calculate_mass(seq, mass_dict=None):
+def calculate_mass(seq, mass_dict=None, N_terminus=1, O_terminus=17):
     mass = 0
     for i in seq:
         if not i.mass:
@@ -29,7 +29,9 @@ def calculate_mass(seq, mass_dict=None):
                                 m.value))
                 else:
                     mass += m.mass
-    return mass
+    return mass + N_terminus + O_terminus
+
+
 
 
 
