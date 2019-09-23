@@ -2,7 +2,7 @@ from sequal.sequence import Sequence
 from sequal.mass import calculate_mass
 
 modifier = {
-    "b": -17
+    "b": -18-19,
 }
 
 class Ion(Sequence):

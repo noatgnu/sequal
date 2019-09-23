@@ -22,8 +22,8 @@ class MassSpecTestCase(unittest.TestCase):
             print(i)
             s = Sequence(seq, mods=i)
             print(s)
-            for x, y in fragment_non_labile(s, "by"):
-                print(x, "b{}".format(x.fragment_number))
+            for b, y in fragment_non_labile(s, "by"):
+                print(b, "b{}".format(b.fragment_number))
                 print(y, "y{}".format(y.fragment_number))
 
     def test_fragment_labile(self):
