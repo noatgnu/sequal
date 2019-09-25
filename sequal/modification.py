@@ -28,10 +28,16 @@ class Modification(BaseBlock):
         self.full_name = full_name
 
     def __repr__(self):
-        return self.value
+        if not self.labile:
+            return self.value
+        else:
+            return self.value + str(self.labile_number)
 
     def __str__(self):
-        return self.value
+        if not self.labile:
+            return self.value
+        else:
+            return self.value + str(self.labile_number)
 
     def find_positions(self, seq):
         for i in self.regex.finditer(seq):

@@ -34,7 +34,8 @@ class MassSpecTestCase(unittest.TestCase):
         for i in g.generate():
             s = Sequence(seq, mods=i)
             ion = fragment_labile(s)
-            print(ion, "Y{}".format(ion.fragment_number))
+            if ion.has_labile:
+                print(ion, "Y{}".format(ion.fragment_number))
 
 
 if __name__ == '__main__':

@@ -17,13 +17,13 @@ class AminoAcid(BaseBlock):
     def __repr__(self):
         s = self.value
         for i in self.mods:
-            s += "[{}]".format(str(i))
+            s += "[{}]".format(i.value)
         return s
 
     def __str__(self):
         s = self.value
         for i in self.mods:
-            s += "[{}]".format(str(i))
+            s += "[{}]".format(i.value)
         return s
 
 

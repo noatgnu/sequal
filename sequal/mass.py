@@ -1,11 +1,12 @@
 from sequal.amino_acid import AminoAcid
 from sequal.sequence import Sequence
+from sequal import resources
 
 
 def calculate_mass(seq, mass_dict=None, N_terminus=0, O_terminus=0, with_water=True):
     mass = 0
     if with_water:
-        mass += 18.0153
+        mass += resources.H*2 + resources.O
     for i in seq:
         if not i.mass:
             if mass_dict:
