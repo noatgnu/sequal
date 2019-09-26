@@ -21,10 +21,11 @@ class Ion(Sequence):
                 if m.labile:
                     self.has_labile = True
 
-    def mass_calculate(self):
-        m = calculate_mass(self.seq)
-        ion = modifier.get(self.ion_type, 0)
-        mi = (m + ion + self.charge)/self.charge
+    def mz_calculate(self, charge=None):
+        if not charge:
+            charge = self.charge
+        m = calculate_mass(self.seq, with_water=True)
+        mi = (m + charge)/charge
         return mi
 
 
