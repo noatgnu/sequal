@@ -4,7 +4,7 @@ from sequal.base_block import BaseBlock
 
 
 class Modification(BaseBlock):
-    def __init__(self, value, position=None, regex_pattern=None, full_name=None, mod_type="static", labile=False, labile_number=0, mass=0):
+    def __init__(self, value, position=None, regex_pattern=None, full_name=None, mod_type="static", labile=False, labile_number=0, mass=0, all_filled=False):
         """
         :param position
         Position of the modification on the block it belongs to. Should be int and not None if it is assigned to a
@@ -26,6 +26,7 @@ class Modification(BaseBlock):
         self.labile = labile
         self.labile_number = labile_number
         self.full_name = full_name
+        self.all_fill = all_filled
 
     def __repr__(self):
         if not self.labile:
@@ -50,21 +51,25 @@ class Modification(BaseBlock):
 
 
 class ModificationMap:
-    def __init__(self, seq, mods, ignore_positions=None):
+    def __init__(self, seq, mods, ignore_positions=None, parse_position=True, mod_position_dict=None):
         self.ignore_positions = ignore_positions
         self.seq = seq
         self.mod_dict_by_name = {}
-        self.mod_position_dict = {}
+        if mod_position_dict:
+            self.mod_position_dict = mod_position_dict
+
         for m in mods:
-            d = []
-            self.mod_dict_by_name[m.value] = m
-            for p_start, p_end in m.find_positions(self.seq):
-                if ignore_positions:
-                    if p_start not in ignore_positions:
+            self.mod_dict_by_name[str(m)] = m
+            if parse_position:
+                d = []
+                for p_start, p_end in m.find_positions(self.seq):
+                    if ignore_positions:
+                        if p_start not in ignore_positions:
+                            d.append(p_start)
+                    else:
                         d.append(p_start)
-                else:
-                    d.append(p_start)
-            self.mod_position_dict[m.value] = d
+                self.mod_position_dict[str(m)] = d
+        print(self.mod_position_dict)
 
     def get_mod_positions(self, mod_name):
         if mod_name in self.mod_position_dict:

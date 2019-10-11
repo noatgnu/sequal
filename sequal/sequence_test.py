@@ -37,6 +37,11 @@ class TestAASequence(unittest.TestCase):
         for i in seq.seq:
             print(i, i.mods)
 
+    def test_custom_string(self):
+        seq = Sequence("TENST")
+        a = {1:"tes", 2:["1", "200"]}
+        print(seq.to_string_customize(a, individual_annotation_enclose=False, individual_annotation_separator="."))
+
 
 class TestModdedSequence(unittest.TestCase):
     def test_variable_mod_generator(self):

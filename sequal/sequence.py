@@ -176,9 +176,22 @@ class Sequence:
             seq += i.value
         return seq
 
-    def to_string_customize(self, data, annotation_placement, block_separator="", annotation_enclose_characters=("[", "]"),
+    def to_string_customize(self, data, annotation_placement="right", block_separator="", annotation_enclose_characters=("[", "]"),
                             individual_annotation_enclose=False, individual_annotation_enclose_characters=("[", "]"),
                             individual_annotation_separator=""):
+        """
+
+        :rtype: str
+        :param data: a dictionary where the key is the index position of the amino acid residue and the value is a
+        iterable where containing the item needed to be included into the sequence.
+        :param annotation_placement: whether the information should be included on the right of the left of the residue
+        :param block_separator: separator between each block of annotation information to be included
+        :param annotation_enclose_characters: enclosure characters for each annotation cluster
+        :param individual_annotation_enclose: whether or not each individual annotation should be enclosed
+        :param individual_annotation_enclose_characters: enclosure characters for each individual annotation
+        :param individual_annotation_separator: separator for each individual annotation
+        :return:
+        """
         assert annotation_placement in {"left", "right"}
         seq = []
         for i in range(len(self.seq)):
@@ -190,10 +203,14 @@ class Sequence:
                         annotation.append("{}{}{}".format(individual_annotation_enclose_characters[0], v, individual_annotation_enclose_characters[1]))
                 else:
                     annotation = data[i]
-                if annotation_enclose_characters:
-                    seq.append("{}{}{}".format(annotation_enclose_characters[0], individual_annotation_separator.join(annotation), annotation_enclose_characters[1]))
+                if type(annotation) == str:
+                    ann = annotation
                 else:
-                    seq.append(individual_annotation_separator.join(annotation))
+                    ann = individual_annotation_separator.join(annotation)
+                if annotation_enclose_characters:
+                    seq.append("{}{}{}".format(annotation_enclose_characters[0], ann, annotation_enclose_characters[1]))
+                else:
+                    seq.append(individual_annotation_separator.join(ann))
         return block_separator.join(seq)
 
 
@@ -231,10 +248,9 @@ def ordered_serialize_position_dict(positions):
 class ModdedSequenceGenerator:
     used_scenarios_set: Set[str]
 
-    def __init__(self, seq, variable_mods=None, static_mods=None, used_scenarios=None):
+    def __init__(self, seq, variable_mods=None, static_mods=None, used_scenarios=None, parse_mod_position=True, mod_position_dict=None, ignore_position=None):
         """
         Generator for creating modified sequences.
-
         :type used_scenarios: set
         :type static_mods: List[Modification]
         :type variable_mods: List[Modification]
@@ -243,15 +259,23 @@ class ModdedSequenceGenerator:
         self.seq = seq
         if static_mods:
             self.static_mods = static_mods
-            self.static_map = ModificationMap(seq, static_mods)
+
+            self.static_map = ModificationMap(seq, static_mods, parse_position=parse_mod_position, mod_position_dict=mod_position_dict)
             self.static_mod_position_dict = self.static_mod_generate()
         else:
             self.static_mod_position_dict = {}
+        if ignore_position:
+            self.ignore_position = ignore_position
+        else:
+            self.ignore_position = set()
+
+        for i in self.static_mod_position_dict:
+            self.ignore_position.add(i)
 
         if variable_mods:
             self.variable_mods = variable_mods
             if self.static_mod_position_dict:
-                self.variable_map = ModificationMap(seq, variable_mods, ignore_positions=set(self.static_mod_position_dict.keys()))
+                self.variable_map = ModificationMap(seq, variable_mods, ignore_positions=self.ignore_position, parse_position=parse_mod_position, mod_position_dict=mod_position_dict)
             else:
                 self.variable_map = ModificationMap(seq, variable_mods)
             self.variable_mod_number = len(variable_mods)
@@ -281,8 +305,10 @@ class ModdedSequenceGenerator:
 
     def static_mod_generate(self):
         position_dict = {}
+
         for m in self.static_mods:
-            for pm in self.static_map.get_mod_positions(m.value):
+
+            for pm in self.static_map.get_mod_positions(str(m)):
                 if pm not in position_dict:
                     position_dict[pm] = []
                 position_dict[pm].append(m)
@@ -295,10 +321,14 @@ class ModdedSequenceGenerator:
         position list
         """
         for i in self.variable_mods:
-            positions = self.variable_map.get_mod_positions(i.value)
+            positions = self.variable_map.get_mod_positions(str(i))
             if i.value not in self.variable_map_scenarios:
-                self.variable_map_scenarios[i.value] = list(
-                    variable_position_placement_generator(positions))
+                if not i.all_fill:
+                    self.variable_map_scenarios[i.value] = list(
+                        variable_position_placement_generator(positions))
+                else:
+                    self.variable_map_scenarios[i.value] = [[], positions]
+
 
     def explore_scenarios(self, current_mod=0, mod=None):
         if mod is None:

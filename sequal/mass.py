@@ -20,7 +20,8 @@ def calculate_mass(seq, mass_dict=None, N_terminus=0, O_terminus=0, with_water=T
             mass += i.mass
         if i.mods:
             for m in i.mods:
-                if not m.mass:
+                print(m, m.mass)
+                if m.mass != 0 and not m.mass:
                     if mass_dict:
                         if m.value in mass_dict:
                             mass += mass_dict[m.value]
