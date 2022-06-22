@@ -1,4 +1,6 @@
+# Hardcoded resources for use of calculating mass for sequences, mass spectrometry ion fragments and glycans
 
+proton = 1.007277
 H = 1.007825
 O = 15.99491463
 AA_mass = {"A": 71.037114,
@@ -22,3 +24,12 @@ AA_mass = {"A": 71.037114,
            "W": 186.079313,
            "Y": 163.06332,
            "V": 99.068414}
+
+glycan_block_dict = {"HexNAc": 203.079372520,
+          "Hex": 162.0528234185,
+          "Fuc": 146.057908799,
+          "NeuAc": 291.0954165066,
+          "Sulfo": 79.9568148602,
+          "Phospho": 79.9663305228,
+          "Pent": 132.0422587348,
+          "NeuGc": 307.0903311261}

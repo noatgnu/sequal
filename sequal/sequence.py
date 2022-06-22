@@ -10,7 +10,7 @@ mod_pattern = re.compile(r"[\(|\[]+([^\)]+)[\)|\]]+")
 mod_enclosure_start = {"(", "[", "{"}
 mod_enclosure_end = {")", "]", "}"}
 
-
+# Base sequence object for peptide or protein sequences and their fragments
 class Sequence:
     seq: List[Any]
 
@@ -104,6 +104,7 @@ class Sequence:
 
                     current_mod = []
                 if mod_position == "right":
+
                     if current_mod and not mods:
                         for i in current_mod:
                             self.seq[current_position - 1].set_modification(i)
@@ -112,19 +113,27 @@ class Sequence:
                         current_unit.position = current_position
                     else:
                         current_unit = self.encoder(b, current_position)
+
                     if current_position in self.mods and current_unit:
                         if type(self.mods[current_position]) == Modification:
                             current_unit.set_modification(self.mods[current_position])
+
                         else:
                             for mod in self.mods[current_position]:
                                 current_unit.set_modification(mod)
+
                     self.seq.append(deepcopy(current_unit))
 
                     current_mod = []
                 current_position += 1
             else:
                 if not mods:
-                    current_mod.append(Modification(b[1:-1]))
+                    # current_mod.append(Modification(b[1:-1]))
+                    if mod_position == "right":
+                        self.seq[current_position-1]\
+                            .set_modification(Modification(b[1:-1]))
+                    else:
+                        current_mod.append(Modification(b[1:-1]))
 
     def __load_sequence_iter(self, seq=None, iter_seq=None):
         mod_open = 0
@@ -213,6 +222,34 @@ class Sequence:
                     seq.append(individual_annotation_separator.join(ann))
         return block_separator.join(seq)
 
+    def find_with_regex(self, motif, ignore=None):
+        pattern = re.compile(motif)
+        new_str = ""
+        if ignore is not None:
+            for i in range(len(ignore)):
+                if not ignore[i]:
+                    new_str += self.seq[i].value
+        else:
+            new_str = self.to_stripped_string()
+
+        for i in pattern.finditer(new_str):
+
+            if not i.groups():
+                yield slice(i.start(), i.end())
+            else:
+                for m in range(1, len(i.groups()) + 1):
+                    yield slice(i.start(m), i.end(m))
+
+    def gaps(self):
+        s = [False for i in range(len(self.seq))]
+        for i in range(len(s)):
+            if self.seq[i].value == '-':
+                s[i] = True
+
+        return s
+
+    def count(self, char, start, end):
+        return self.to_stripped_string().count(char, start, end)
 
 def count_unique_elements(seq):
     elements = {}
