@@ -1,8 +1,11 @@
 [tool.poetry]
 name = "sequal"
 version = "1.0.0"
-description = ""
-authors = ["Toan Phung <toan.phungkhoiquoctoan@gmail.com>"]
+description = "A Python package for working with protein sequence and PTM"
+authors = ["Toan K. Phung <toan.phungkhoiquoctoan@gmail.com>"]
+license = "MIT"
+keywords = ["protein sequence", "modification", "mass spectrometry"]
+readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.9"
