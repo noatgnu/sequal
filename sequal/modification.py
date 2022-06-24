@@ -75,6 +75,8 @@ class ModificationMap:
         self.mod_dict_by_name = {}
         if mod_position_dict:
             self.mod_position_dict = mod_position_dict
+        else:
+            self.mod_position_dict = {}
 
         for m in mods:
             self.mod_dict_by_name[str(m)] = m
