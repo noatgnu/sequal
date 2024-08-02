@@ -2,17 +2,16 @@
 class BaseBlock:
     def __init__(self, value, position, branch=False, mass=None):
         """
-        :type mass: float
-        mass of the block
-        :type branch: bool
-        whether or not this block is a branch of another block
-        :type position: int
-        position of the block within a chain
-        :type value: str
-        name of the block
+        Initialize a BaseBlock object.
 
-
-
+        :param value: str
+            The name of the block.
+        :param position: int
+            The position of the block within a chain.
+        :param branch: bool, optional
+            Indicates whether this block is a branch of another block (default is False).
+        :param mass: float, optional
+            The mass of the block (default is None).
         """
         self.value = value
         self.position = position
@@ -21,7 +20,19 @@ class BaseBlock:
         self.extra = None
 
     def __str__(self):
+        """
+        Return a string representation of the block.
+
+        :return: str
+            The name of the block.
+        """
         return self.value
 
     def __repr__(self):
+        """
+        Return a string representation of the block for debugging.
+
+        :return: str
+            The name of the block.
+        """
         return self.value

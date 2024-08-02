@@ -1,16 +1,26 @@
 # SEQUAL / seq=
 
-Sequal is developed as a python package for in-silico generation of modified sequences from a sequence input and modifications.
+Sequal is a Python package for in-silico generation of modified sequences from a sequence input and modifications. It is designed to assist in protein engineering, mass spectrometry analysis, drug design, and other bioinformatics research.
 
-## Dependencies
+## Features
 
-`None.`
+- Generate all possible sequences with static and variable modifications.
+- Support for custom modification annotations.
+- Utilities for mass spectrometry fragment generation.
+
+## Installation
+
+To install Sequal, use pip:
+
+```sh
+pip install sequal
+````
 
 ## Usage
 
-
 ### Sequence comprehension
 
+Using Sequence Object with Unmodified Protein Sequence
 
 ```python
 from sequal.sequence import Sequence
@@ -20,6 +30,8 @@ seq = Sequence("TESTEST")
 print(seq.seq) #should print "TESTEST"
 print(seq[0:2]) #should print "TE"
 ```
+
+Using Sequence Object with Modified Protein Sequence
 
 ```python
 from sequal.sequence import Sequence
@@ -40,6 +52,8 @@ for i in seq.seq:
     print(i, i.mods) #should print N [HexNAc] on the 3rd amino acid
 ```
 
+Custom Annotation Formatting
+
 ```python
 from sequal.sequence import Sequence
 #Format sequence with custom annotation
@@ -52,6 +66,8 @@ print(seq.to_string_customize(a, individual_annotation_enclose=False, individual
 
 ### Modification
 
+Creating a Modification Object
+
 ```python
 from sequal.modification import Modification
 
@@ -62,83 +78,66 @@ for ps, pe in mod.find_positions("TESNEST"):
     # this should print out the position 3 on the sequence as the start of the match and position 6 as the end of the match
 ```
 
+### Generating Modified Sequences
+
+Static Modification
+
 ```python
 from sequal.sequence import ModdedSequenceGenerator
 from sequal.modification import Modification
 
-# Examples for generation of modification combinations for a specific peptide
-
-nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True)
-osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)
-sulfation = Modification("Sulfation",regex_pattern="S", mod_type="variable", labile=True)
-carbox = Modification("Carboxylation",regex_pattern="E", mod_type="variable", labile=True)
-carbox2 = Modification("Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983)
 propiona = Modification("Propionamide", regex_pattern="C", mod_type="static")
-
-#Static modification 
-
 seq = "TECSNTT"
 mods = [propiona]
 g = ModdedSequenceGenerator(seq, static_mods=mods)
 for i in g.generate():
-    print(i)
-    # this would print out a dictionary with key being the position of modifications and values being an array of all modifications can be generated at that site
-    # {2: [Propionamide]}
+    print(i)  # should print {2: [Propionamide]}
+```
 
-#Variable modification
+Variable Modification
 
+```python
+from sequal.sequence import ModdedSequenceGenerator
+from sequal.modification import Modification
+
+nsequon = Modification("HexNAc", regex_pattern="N[^P][S|T]", mod_type="variable", labile=True)
+osequon = Modification("Mannose", regex_pattern="[S|T]", mod_type="variable", labile=True)
+carbox = Modification("Carboxylation", regex_pattern="E", mod_type="variable", labile=True)
+
+seq = "TECSNTT"
 mods = [nsequon, osequon, carbox]
 g = ModdedSequenceGenerator(seq, mods, [])
 print(g.variable_map.mod_position_dict)
-#The object when supplied with an array of variable modifications would also create a dictionary of the modification and where they may be found
-#{'HexNAc0': [3], 'Mannose0': [0, 2, 4, 5, 6], 'Carboxylation0': [1]}
+# should print {'HexNAc0': [3], 'Mannose0': [0, 2, 4, 5, 6], 'Carboxylation0': [1]}
 
 for i in g.generate():
     print(i)
-    #Similar to the static modification example, this will create all possible combinations of variable modifications however it would also include ones without the modification
-    # {}
-    # {1: [Carboxylation0]}
-    # {6: [Mannose0]}
-    # {6: [Mannose0], 1: [Carboxylation0]}
-    # {5: [Mannose0]}
-    # {5: [Mannose0], 1: [Carboxylation0]}
-    # {5: [Mannose0], 6: [Mannose0]}
-    # {5: [Mannose0], 6: [Mannose0], 1: [Carboxylation0]}
-    # ...
-
+    # should print all possible combinations of variable modifications
 ```
+
 ### Mass spectrometry utilities
 
-Here is an examples for usage of the `mass_spectrometry` module within `sequal` in combination with modified sequence generation
+Generating Non-Labile and Labile Ions
 
 ```python
 from sequal.mass_spectrometry import fragment_non_labile, fragment_labile
 from sequal.modification import Modification
 from sequal.sequence import ModdedSequenceGenerator, Sequence
 
-nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True, labile_number=1, mass=203)
+nsequon = Modification("HexNAc", regex_pattern="N[^P][S|T]", mod_type="variable", labile=True, labile_number=1, mass=203)
 propiona = Modification("Propionamide", regex_pattern="C", mod_type="static", mass=71)
-
 
 seq = "TECSNTT"
 static_mods = [propiona]
 variable_mods = [nsequon]
 
-# Generating non labile b- and y- ions
-
 g = ModdedSequenceGenerator(seq, variable_mods, static_mods)
 for i in g.generate():
     print(i)
-    # Print the combination of modifications
     s = Sequence(seq, mods=i)
-    print(s)
-    # Create new modified sequence object using the generated modifications and raw sequence string
     for b, y in fragment_non_labile(s, "by"):
         print(b, "b{}".format(b.fragment_number))
         print(y, "y{}".format(y.fragment_number))
-        # Generate b- and y- non_labile ions objects based on the newly created sequence object
-
-# Generating only labile ions based on the input modification
 
 g = ModdedSequenceGenerator(seq, variable_mods, static_mods)
 for i in g.generate():
@@ -146,9 +145,9 @@ for i in g.generate():
     ion = fragment_labile(s)
     if ion.has_labile:
         print(ion, "Y{}".format(ion.fragment_number))
-        # TEC[Propionamide]SN[HexNAc]TT Y1
         print(ion.mz_calculate(1))
-        # 1011.277047
-
 ```
 
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
