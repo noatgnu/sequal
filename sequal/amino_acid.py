@@ -1,4 +1,5 @@
-from typing import List, Optional, Dict, Any, Union
+from typing import Any, Dict, List, Optional, Union
+
 from sequal.base_block import BaseBlock
 from sequal.modification import Modification
 from sequal.resources import AA_mass
@@ -12,10 +13,9 @@ class AminoAcid(BaseBlock):
     handling modifications and inferring mass from a predefined dictionary.
     """
 
-    def __init__(self,
-                 value: str,
-                 position: Optional[int] = None,
-                 mass: Optional[float] = None):
+    def __init__(
+        self, value: str, position: Optional[int] = None, mass: Optional[float] = None
+    ):
         """
         Initialize an AminoAcid object.
 
@@ -130,8 +130,8 @@ class AminoAcid(BaseBlock):
             Dictionary containing the amino acid's attributes including modifications.
         """
         result = super().to_dict()
-        result['mods'] = [mod.to_dict() for mod in self._mods]
-        result['total_mass'] = self.get_total_mass()
+        result["mods"] = [mod.to_dict() for mod in self._mods]
+        result["total_mass"] = self.get_total_mass()
         return result
 
     def __eq__(self, other) -> bool:

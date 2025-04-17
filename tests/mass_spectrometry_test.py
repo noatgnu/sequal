@@ -1,14 +1,33 @@
 import unittest
 
-from sequal.mass_spectrometry import fragment_non_labile, fragment_labile
+from sequal.mass_spectrometry import fragment_labile, fragment_non_labile
 from sequal.modification import Modification
 from sequal.sequence import ModdedSequenceGenerator, Sequence
 
-nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True, labile_number=1, mass=203)
-osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)
-sulfation = Modification("Sulfation",regex_pattern="S", mod_type="variable", labile=True)
-carbox = Modification("Carboxylation",regex_pattern="E", mod_type="variable", labile=True, labile_number=1)
-carbox2 = Modification("Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983)
+nsequon = Modification(
+    "HexNAc",
+    regex_pattern="N[^P][S|T]",
+    mod_type="variable",
+    labile=True,
+    labile_number=1,
+    mass=203,
+)
+osequon = Modification(
+    "Mannose", regex_pattern="[S|T]", mod_type="variable", labile=True
+)
+sulfation = Modification(
+    "Sulfation", regex_pattern="S", mod_type="variable", labile=True
+)
+carbox = Modification(
+    "Carboxylation",
+    regex_pattern="E",
+    mod_type="variable",
+    labile=True,
+    labile_number=1,
+)
+carbox2 = Modification(
+    "Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983
+)
 propiona = Modification("Propionamide", regex_pattern="C", mod_type="static", mass=71)
 
 
@@ -39,5 +58,5 @@ class MassSpecTestCase(unittest.TestCase):
                 print(ion.mz_calculate(1))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -1,31 +1,35 @@
 import unittest
 
 from sequal.modification import Modification
-from sequal.sequence import Sequence, ModdedSequenceGenerator
+from sequal.sequence import ModdedSequenceGenerator, Sequence
 
-nsequon = Modification("HexNAc",regex_pattern="N[^P][S|T]", mod_type="variable", labile=True)
-osequon = Modification("Mannose",regex_pattern="[S|T]", mod_type="variable", labile=True)
-sulfation = Modification("Sulfation",regex_pattern="S", mod_type="variable", labile=True)
-carbox = Modification("Carboxylation",regex_pattern="E", mod_type="variable", labile=True)
-carbox2 = Modification("Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983)
+nsequon = Modification(
+    "HexNAc", regex_pattern="N[^P][S|T]", mod_type="variable", labile=True
+)
+osequon = Modification(
+    "Mannose", regex_pattern="[S|T]", mod_type="variable", labile=True
+)
+sulfation = Modification(
+    "Sulfation", regex_pattern="S", mod_type="variable", labile=True
+)
+carbox = Modification(
+    "Carboxylation", regex_pattern="E", mod_type="variable", labile=True
+)
+carbox2 = Modification(
+    "Carboxylation2", regex_pattern="E", mod_type="variable", labile=True, mass=43.98983
+)
 propiona = Modification("Propionamide", regex_pattern="C", mod_type="static")
 
 
 class TestAASequence(unittest.TestCase):
     def test_normal_sequence(self):
         seq = Sequence("TESTEST")
-        print(seq.seq)
-        print(seq[0:2])
 
     def test_mod_rightseq(self):
         seq = Sequence("TEN[HexNAc]ST")
-        for i in seq.seq:
-            print(i, i.mods)
 
     def test_two_mod_rightseq(self):
         seq = Sequence("TEN[HexNAc][HexNAc]ST")
-        for i in seq.seq:
-            print(i, i.mods)
 
     def test_mod_leftseq(self):
         seq = Sequence("TE[HexNAc]NST", mod_position="left")
@@ -39,8 +43,14 @@ class TestAASequence(unittest.TestCase):
 
     def test_custom_string(self):
         seq = Sequence("TENST")
-        a = {1:"tes", 2:["1", "200"]}
-        print(seq.to_string_customize(a, individual_annotation_enclose=False, individual_annotation_separator="."))
+        a = {1: "tes", 2: ["1", "200"]}
+        print(
+            seq.to_string_customize(
+                a,
+                individual_annotation_enclose=False,
+                individual_annotation_separator=".",
+            )
+        )
 
 
 class TestModdedSequence(unittest.TestCase):
@@ -66,6 +76,7 @@ class TestModdedSequence(unittest.TestCase):
         g = ModdedSequenceGenerator(seq, variable_mods, static_mods)
         for i in g.generate():
             print(i)
+
 
 class TestProForma(unittest.TestCase):
     def test_basic_peptide_with_modification(self):
@@ -263,7 +274,7 @@ class TestProForma(unittest.TestCase):
             "EM[U:+15.995]EVEES[U:+79.966]PEK",
             "EM[M:+15.9949]EVEES[R:+79.9663]PEK",
             "EM[X:+15.9949]EVEES[G:+79.9663]PEK",
-            "EM[Obs:+15.995]EVEES[Obs:+79.978]PEK"
+            "EM[Obs:+15.995]EVEES[Obs:+79.978]PEK",
         ]
 
         for proforma in proforma_strings:
@@ -324,7 +335,7 @@ class TestProForma(unittest.TestCase):
         assert seq.to_stripped_string() == "RTAAXWT"
 
         # Check gap modification
-        assert seq.seq[4].value == 'X'
+        assert seq.seq[4].value == "X"
         assert seq.seq[4].mods[0].mod_type == "gap"
         assert seq.seq[4].mods[0].value == "+367.0537"
 
@@ -348,7 +359,7 @@ class TestProForma(unittest.TestCase):
             "SEQUEN[Formula:C12 H20 O2]CE",  # with spaces
             "SEQUEN[Formula:[13C2]CH6N]CE",  # with isotope
             "SEQUEN[Formula:HN-1O2]CE",  # with negative cardinality
-            "SEQUEN[Formula:[13C2][12C-2]H2N]CE"  # complex isotope replacement
+            "SEQUEN[Formula:[13C2][12C-2]H2N]CE",  # complex isotope replacement
         ]
 
         for proforma in proforma_strings:
@@ -364,5 +375,28 @@ class TestProForma(unittest.TestCase):
             # Verify roundtrip conversion
             assert seq.to_proforma() == proforma
 
-if __name__ == '__main__':
+    def test_glycan_notation(self):
+        """Test modifications with glycan notation."""
+        proforma_strings = [
+            "SEQUEN[Glycan:Hex2HexNAc]CE",
+            "SEQUEN[Glycan:HexNAc1Hex2]CE",
+            "SEQUEN[Glycan:NeuAc1Hex3]CE",
+            "SEQUEN[Glycan:Fuc1dHex2Pen3]CE",
+        ]
+
+        for proforma in proforma_strings:
+            seq = Sequence.from_proforma(proforma)
+
+            # Verify the sequence itself
+            assert seq.to_stripped_string() == "SEQUENCE"
+
+            # Check modification
+            mod = seq.seq[5].mods[0]
+            assert mod.source == "Glycan"
+
+            # Verify roundtrip conversion
+            assert seq.to_proforma() == proforma
+
+
+if __name__ == "__main__":
     unittest.main()

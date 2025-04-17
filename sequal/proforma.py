@@ -1,6 +1,6 @@
 import re
 from collections import defaultdict
-from typing import Tuple, Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 from sequal.modification import Modification
 
@@ -9,14 +9,14 @@ class ProFormaParser:
     """Parser for the ProForma peptide notation format."""
 
     # Regex patterns for ProForma notation components
-    MASS_SHIFT_PATTERN = re.compile(r'^[+-]\d+(\.\d+)?$')
-    TERMINAL_PATTERN = re.compile(r'^\[([^\]]+)\]-(.+)-\[([^\]]+)\]$')
-    N_TERMINAL_PATTERN = re.compile(r'^\[([^\]]+)\]-(.+)$')
-    C_TERMINAL_PATTERN = re.compile(r'^(.+)-\[([^\]]+)\]$')
-    CROSSLINK_PATTERN = re.compile(r'^([^#]+)#(XL[A-Za-z0-9]+)$')
-    CROSSLINK_REF_PATTERN = re.compile(r'^#(XL[A-Za-z0-9]+)$')
-    BRANCH_PATTERN = re.compile(r'^([^#]+)#BRANCH$')
-    BRANCH_REF_PATTERN = re.compile(r'^#BRANCH$')
+    MASS_SHIFT_PATTERN = re.compile(r"^[+-]\d+(\.\d+)?$")
+    TERMINAL_PATTERN = re.compile(r"^\[([^\]]+)\]-(.+)-\[([^\]]+)\]$")
+    N_TERMINAL_PATTERN = re.compile(r"^\[([^\]]+)\]-(.+)$")
+    C_TERMINAL_PATTERN = re.compile(r"^(.+)-\[([^\]]+)\]$")
+    CROSSLINK_PATTERN = re.compile(r"^([^#]+)#(XL[A-Za-z0-9]+)$")
+    CROSSLINK_REF_PATTERN = re.compile(r"^#(XL[A-Za-z0-9]+)$")
+    BRANCH_PATTERN = re.compile(r"^([^#]+)#BRANCH$")
+    BRANCH_REF_PATTERN = re.compile(r"^#BRANCH$")
 
     @staticmethod
     def parse(proforma_str: str) -> Tuple[str, Dict[int, List[Modification]]]:
@@ -50,11 +50,15 @@ class ProFormaParser:
 
         # Add terminal modifications
         if n_term_mod_str:
-            n_term_mod = ProFormaParser._create_modification(n_term_mod_str, is_terminal=True)
+            n_term_mod = ProFormaParser._create_modification(
+                n_term_mod_str, is_terminal=True
+            )
             modifications[-1].append(n_term_mod)
 
         if c_term_mod_str:
-            c_term_mod = ProFormaParser._create_modification(c_term_mod_str, is_terminal=True)
+            c_term_mod = ProFormaParser._create_modification(
+                c_term_mod_str, is_terminal=True
+            )
             modifications[-2].append(c_term_mod)
 
         # Process the main sequence
@@ -63,14 +67,14 @@ class ProFormaParser:
         while i < len(proforma_str):
             char = proforma_str[i]
 
-            if char == '[':
+            if char == "[":
                 # Parse modification in square brackets
                 bracket_count = 1
                 j = i + 1
                 while j < len(proforma_str) and bracket_count > 0:
-                    if proforma_str[j] == '[':
+                    if proforma_str[j] == "[":
                         bracket_count += 1
-                    elif proforma_str[j] == ']':
+                    elif proforma_str[j] == "]":
                         bracket_count -= 1
                     j += 1
 
@@ -80,15 +84,19 @@ class ProFormaParser:
                 if j == -1:
                     raise ValueError(f"Unclosed square bracket at position {i}")
 
-                mod_str = proforma_str[i + 1:j]
+                mod_str = proforma_str[i + 1 : j]
                 if next_mod_is_gap:
                     mod = ProFormaParser._create_modification(mod_str, is_gap=True)
                     next_mod_is_gap = False
                 # Check if this is a crosslink reference
                 elif ProFormaParser.CROSSLINK_REF_PATTERN.match(mod_str):
-                    mod = ProFormaParser._create_modification(mod_str, is_crosslink_ref=True)
+                    mod = ProFormaParser._create_modification(
+                        mod_str, is_crosslink_ref=True
+                    )
                 elif ProFormaParser.BRANCH_REF_PATTERN.match(mod_str):
-                    mod = ProFormaParser._create_modification(mod_str, is_branch_ref=True)
+                    mod = ProFormaParser._create_modification(
+                        mod_str, is_branch_ref=True
+                    )
                 else:
                     # Check for crosslink or branch notation within the modification
                     crosslink_match = ProFormaParser.CROSSLINK_PATTERN.match(mod_str)
@@ -96,10 +104,14 @@ class ProFormaParser:
 
                     if crosslink_match:
                         mod_base, crosslink_id = crosslink_match.groups()
-                        mod = ProFormaParser._create_modification(mod_base, crosslink_id=crosslink_id)
+                        mod = ProFormaParser._create_modification(
+                            mod_base, crosslink_id=crosslink_id
+                        )
                     elif branch_match:
                         mod_base = branch_match.group(1)
-                        mod = ProFormaParser._create_modification(mod_base, is_branch=True)
+                        mod = ProFormaParser._create_modification(
+                            mod_base, is_branch=True
+                        )
                     else:
                         mod = ProFormaParser._create_modification(mod_str)
 
@@ -108,13 +120,13 @@ class ProFormaParser:
                     modifications[len(base_sequence) - 1].append(mod)
 
                 i = j + 1
-            elif char == '{':
+            elif char == "{":
                 # Parse ambiguous modification in curly braces
-                j = proforma_str.find('}', i)
+                j = proforma_str.find("}", i)
                 if j == -1:
                     raise ValueError(f"Unclosed curly brace at position {i}")
 
-                mod_str = proforma_str[i + 1:j]
+                mod_str = proforma_str[i + 1 : j]
                 mod = ProFormaParser._create_modification(mod_str, is_ambiguous=True)
 
                 # Add ambiguous modification to the last amino acid
@@ -125,7 +137,11 @@ class ProFormaParser:
             else:
                 # Regular amino acid
                 base_sequence += char
-                is_gap = (char == 'X' and i + 1 < len(proforma_str) and proforma_str[i + 1] == '[')
+                is_gap = (
+                    char == "X"
+                    and i + 1 < len(proforma_str)
+                    and proforma_str[i + 1] == "["
+                )
                 if is_gap:
                     next_mod_is_gap = True
                 i += 1
@@ -133,11 +149,16 @@ class ProFormaParser:
         return base_sequence, modifications
 
     @staticmethod
-    def _create_modification(mod_str: str, is_terminal: bool = False,
-                             is_ambiguous: bool = False, crosslink_id: Optional[str] = None,
-                             is_crosslink_ref: bool = False, is_branch: bool = False,
-                             is_branch_ref: bool = False,
-                             is_gap: bool = False) -> Modification:
+    def _create_modification(
+        mod_str: str,
+        is_terminal: bool = False,
+        is_ambiguous: bool = False,
+        crosslink_id: Optional[str] = None,
+        is_crosslink_ref: bool = False,
+        is_branch: bool = False,
+        is_branch_ref: bool = False,
+        is_gap: bool = False,
+    ) -> Modification:
         """
         Create a Modification object from a ProForma modification string.
 
@@ -168,8 +189,7 @@ class ProFormaParser:
         """
         # Handle mass shift notation
 
-
-            # Determine modification type
+        # Determine modification type
         mod_type = "static"  # Default
         if is_terminal:
             mod_type = "terminal"
@@ -195,5 +215,5 @@ class ProFormaParser:
             crosslink_id=crosslink_id,
             is_crosslink_ref=is_crosslink_ref,
             is_branch=is_branch,
-            is_branch_ref=is_branch_ref
+            is_branch_ref=is_branch_ref,
         )

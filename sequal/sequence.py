@@ -1,4 +1,3 @@
-
 """
 This module provides the Sequence class for handling peptide or protein sequences and their fragments.
 
@@ -11,22 +10,35 @@ Functions:
     variable_position_placement_generator(positions): Generates different position combinations for modifications.
     ordered_serialize_position_dict(positions): Serializes a dictionary of positions in an ordered manner.
 """
-from typing import Dict, List, Set, Iterator, Iterable, Any, Optional, Union, Type, Tuple, TypeVar, Generic
-from collections import Counter, defaultdict
 import itertools
 import json
 import re
+from collections import Counter, defaultdict
 from copy import deepcopy
+from typing import (
+    Any,
+    Dict,
+    Generic,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+)
 
 from sequal.amino_acid import AminoAcid
-from sequal.modification import Modification, ModificationMap
 from sequal.base_block import BaseBlock
+from sequal.modification import Modification, ModificationMap
 from sequal.proforma import ProFormaParser
 
 mod_pattern = re.compile(r"[\(|\[]+([^\)]+)[\)|\]]+")
 mod_enclosure_start = {"(", "[", "{"}
 mod_enclosure_end = {")", "]", "}"}
-T = TypeVar('T', bound='BaseBlock')
+T = TypeVar("T", bound="BaseBlock")
 
 # Base sequence object for peptide or protein sequences and their fragments
 
@@ -61,14 +73,14 @@ class Sequence:
     _MOD_ENCLOSURE_END = {")", "]", "}"}
 
     def __init__(
-            self,
-            seq: Union[str, List, 'Sequence'],
-            encoder: Type[BaseBlock] = AminoAcid,
-            mods: Optional[Dict[int, Union[Modification, List[Modification]]]] = None,
-            parse: bool = True,
-            parser_ignore: Optional[List[str]] = None,
-            mod_position: str = "right",
-            chains: Optional[List['Sequence']] = None
+        self,
+        seq: Union[str, List, "Sequence"],
+        encoder: Type[BaseBlock] = AminoAcid,
+        mods: Optional[Dict[int, Union[Modification, List[Modification]]]] = None,
+        parse: bool = True,
+        parser_ignore: Optional[List[str]] = None,
+        mod_position: str = "right",
+        chains: Optional[List["Sequence"]] = None,
     ):
         # Initialize basic attributes
         self.encoder = encoder
@@ -82,7 +94,7 @@ class Sequence:
             for attr_name, attr_value in seq.__dict__.items():
                 if attr_name != "mods":
                     setattr(self, attr_name, deepcopy(attr_value))
-            if hasattr(seq, 'mods'):
+            if hasattr(seq, "mods"):
                 for pos, mod_list in seq.mods.items():
                     self.mods[pos] = deepcopy(mod_list)
         else:
@@ -103,8 +115,8 @@ class Sequence:
     def from_proforma(self, proforma_str):
         """Create a Sequence object from a ProForma string with multi-chain support."""
         # Check for multi-chain notation
-        if '//' in proforma_str:
-            chains = proforma_str.split('//')
+        if "//" in proforma_str:
+            chains = proforma_str.split("//")
             # Create the first chain
             main_seq = self.from_proforma(chains[0])
             main_seq.is_multi_chain = True
@@ -150,26 +162,26 @@ class Sequence:
                 for mod in aa.mods:
                     if mod.mod_type == "ambiguous":
                         result += f"{{{mod.value}}}"
-                    elif hasattr(mod, '_is_branch_ref') and mod._is_branch_ref:
+                    elif hasattr(mod, "_is_branch_ref") and mod._is_branch_ref:
                         # Only add branch reference once per residue
                         if not branch_refs_added:
                             result += f"[#BRANCH]"
                             branch_refs_added = True
-                    elif hasattr(mod, '_is_crosslink_ref') and mod._is_crosslink_ref:
+                    elif hasattr(mod, "_is_crosslink_ref") and mod._is_crosslink_ref:
                         # Only add each crosslink reference once
                         if mod._crosslink_id not in crosslink_refs_added:
                             result += f"[#{mod._crosslink_id}]"
                             crosslink_refs_added.add(mod._crosslink_id)
                     else:
-                        if hasattr(mod, 'source') and mod.source:
+                        if hasattr(mod, "source") and mod.source:
                             result += f"[{mod.source}:{mod.value}"
                         else:
                             result += f"[{mod.value}"
 
                         # Add branch or crosslink identifier
-                        if hasattr(mod, '_is_branch') and mod._is_branch:
+                        if hasattr(mod, "_is_branch") and mod._is_branch:
                             result += "#BRANCH"
-                        elif hasattr(mod, '_crosslink_id') and mod._crosslink_id:
+                        elif hasattr(mod, "_crosslink_id") and mod._crosslink_id:
                             result += f"#{mod._crosslink_id}"
 
                         result += "]"
@@ -180,7 +192,7 @@ class Sequence:
         return result
 
     def to_proforma(self):
-        if hasattr(self, 'is_multi_chain') and self.is_multi_chain:
+        if hasattr(self, "is_multi_chain") and self.is_multi_chain:
             result = "//".join(self._chain_to_proforma(chain) for chain in self.chains)
             return result
         else:
@@ -217,7 +229,9 @@ class Sequence:
                         current_unit = self.encoder(block, current_position)
 
                     # Apply pending modifications
-                    self._apply_modifications(current_unit, current_position, current_mod)
+                    self._apply_modifications(
+                        current_unit, current_position, current_mod
+                    )
                     self.seq.append(deepcopy(current_unit))
                     current_mod = []
 
@@ -263,10 +277,7 @@ class Sequence:
                         current_mod.append(mod_obj)
 
     def _apply_modifications(
-            self,
-            block: BaseBlock,
-            position: int,
-            pending_mods: List[Modification]
+        self, block: BaseBlock, position: int, pending_mods: List[Modification]
     ) -> None:
         """
         Apply modifications to a block.
@@ -308,7 +319,10 @@ class Sequence:
             Extracted modification value.
         """
         # Find content between brackets/parentheses
-        if mod_str[0] in self._MOD_ENCLOSURE_START and mod_str[-1] in self._MOD_ENCLOSURE_END:
+        if (
+            mod_str[0] in self._MOD_ENCLOSURE_START
+            and mod_str[-1] in self._MOD_ENCLOSURE_END
+        ):
             return mod_str[1:-1]
         return mod_str
 
@@ -350,7 +364,7 @@ class Sequence:
                 is_mod = False
                 block = ""
 
-    def __getitem__(self, key: Union[int, slice]) -> Union[BaseBlock, 'Sequence']:
+    def __getitem__(self, key: Union[int, slice]) -> Union[BaseBlock, "Sequence"]:
         """
         Get item or slice from sequence.
 
@@ -383,7 +397,7 @@ class Sequence:
         """Return a string representation of the sequence."""
         return "".join(str(block) for block in self.seq)
 
-    def __iter__(self) -> 'Sequence':
+    def __iter__(self) -> "Sequence":
         """Initialize iteration over the sequence."""
         self.current_iter_count = 0
         return self
@@ -430,14 +444,14 @@ class Sequence:
         return "".join(block.value for block in self.seq)
 
     def to_string_customize(
-            self,
-            data: Dict[int, Union[str, List[str]]],
-            annotation_placement: str = "right",
-            block_separator: str = "",
-            annotation_enclose_characters: Tuple[str, str] = ("[", "]"),
-            individual_annotation_enclose: bool = False,
-            individual_annotation_enclose_characters: Tuple[str, str] = ("[", "]"),
-            individual_annotation_separator: str = ""
+        self,
+        data: Dict[int, Union[str, List[str]]],
+        annotation_placement: str = "right",
+        block_separator: str = "",
+        annotation_enclose_characters: Tuple[str, str] = ("[", "]"),
+        individual_annotation_enclose: bool = False,
+        individual_annotation_enclose_characters: Tuple[str, str] = ("[", "]"),
+        individual_annotation_separator: str = "",
     ) -> str:
         """
         Customize the sequence string with annotations.
@@ -477,7 +491,7 @@ class Sequence:
                     individual_annotation_enclose,
                     individual_annotation_enclose_characters,
                     individual_annotation_separator,
-                    annotation_enclose_characters
+                    annotation_enclose_characters,
                 )
                 elements.append(annotation)
 
@@ -491,19 +505,19 @@ class Sequence:
                     individual_annotation_enclose,
                     individual_annotation_enclose_characters,
                     individual_annotation_separator,
-                    annotation_enclose_characters
+                    annotation_enclose_characters,
                 )
                 elements.append(annotation)
 
         return block_separator.join(elements)
 
     def _format_annotation(
-            self,
-            annotations: Union[str, List[str]],
-            individual_enclose: bool,
-            individual_enclose_chars: Tuple[str, str],
-            separator: str,
-            group_enclose_chars: Optional[Tuple[str, str]]
+        self,
+        annotations: Union[str, List[str]],
+        individual_enclose: bool,
+        individual_enclose_chars: Tuple[str, str],
+        separator: str,
+        group_enclose_chars: Optional[Tuple[str, str]],
     ) -> str:
         """
         Format annotation strings.
@@ -543,9 +557,7 @@ class Sequence:
         return ann_text
 
     def find_with_regex(
-            self,
-            motif: str,
-            ignore: Optional[List[bool]] = None
+        self, motif: str, ignore: Optional[List[bool]] = None
     ) -> Iterator[slice]:
         """
         Find positions in the sequence that match a given regex motif.
@@ -588,7 +600,7 @@ class Sequence:
         List[bool]
             List where True indicates a gap at that position.
         """
-        return [block.value == '-' for block in self.seq]
+        return [block.value == "-" for block in self.seq]
 
     def count(self, char: str, start: int, end: int) -> int:
         """
@@ -622,12 +634,12 @@ class Sequence:
         # Collect all modifications by position
         mods_by_position = {}
         for i, aa in enumerate(self.seq):
-            if hasattr(aa, 'mods') and aa.mods:
+            if hasattr(aa, "mods") and aa.mods:
                 mods_by_position[i] = [mod.to_dict() for mod in aa.mods]
 
         return {
-            'sequence': self.to_stripped_string(),
-            'modifications': mods_by_position
+            "sequence": self.to_stripped_string(),
+            "modifications": mods_by_position,
         }
 
 
@@ -663,7 +675,7 @@ def count_unique_elements(seq: Iterable[T]) -> Dict[str, int]:
         elements[item.value] += 1
 
         # Count modifications if present
-        if hasattr(item, 'mods') and item.mods:
+        if hasattr(item, "mods") and item.mods:
             for mod in item.mods:
                 elements[mod.value] += 1
 
@@ -755,14 +767,14 @@ class ModdedSequenceGenerator:
     """
 
     def __init__(
-            self,
-            seq: str,
-            variable_mods: Optional[List[Modification]] = None,
-            static_mods: Optional[List[Modification]] = None,
-            used_scenarios: Optional[Set[str]] = None,
-            parse_mod_position: bool = True,
-            mod_position_dict: Optional[Dict[str, List[int]]] = None,
-            ignore_position: Optional[Set[int]] = None
+        self,
+        seq: str,
+        variable_mods: Optional[List[Modification]] = None,
+        static_mods: Optional[List[Modification]] = None,
+        used_scenarios: Optional[Set[str]] = None,
+        parse_mod_position: bool = True,
+        mod_position_dict: Optional[Dict[str, List[int]]] = None,
+        ignore_position: Optional[Set[int]] = None,
     ):
         self.seq = seq
         self.static_mods = static_mods or []
@@ -777,7 +789,7 @@ class ModdedSequenceGenerator:
                 seq,
                 self.static_mods,
                 parse_position=parse_mod_position,
-                mod_position_dict=mod_position_dict
+                mod_position_dict=mod_position_dict,
             )
             self.static_mod_position_dict = self._generate_static_mod_positions()
 
@@ -792,7 +804,7 @@ class ModdedSequenceGenerator:
                 self.variable_mods,
                 ignore_positions=self.ignore_position,
                 parse_position=parse_mod_position,
-                mod_position_dict=mod_position_dict
+                mod_position_dict=mod_position_dict,
             )
 
     def generate(self) -> Iterator[Dict[int, List[Modification]]]:
@@ -874,9 +886,9 @@ class ModdedSequenceGenerator:
                 self.variable_map_scenarios[mod.value] = [[], positions]
 
     def _explore_scenarios(
-            self,
-            current_mod_idx: int = 0,
-            current_scenario: Optional[Dict[int, List[Modification]]] = None
+        self,
+        current_mod_idx: int = 0,
+        current_scenario: Optional[Dict[int, List[Modification]]] = None,
     ) -> Iterator[Dict[int, List[Modification]]]:
         """
         Recursively explore all possible modification scenarios.
@@ -916,5 +928,3 @@ class ModdedSequenceGenerator:
 
             # Recursively continue with next modification
             yield from self._explore_scenarios(current_mod_idx + 1, scenario_copy)
-
-

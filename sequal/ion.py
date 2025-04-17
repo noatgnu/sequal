@@ -1,10 +1,11 @@
-from sequal.sequence import Sequence
 from sequal.mass import calculate_mass
 from sequal.resources import proton
+from sequal.sequence import Sequence
 
 modifier = {
-    "b": -18-19,
+    "b": -18 - 19,
 }
+
 
 class Ion(Sequence):
     """
@@ -73,5 +74,3 @@ class Ion(Sequence):
         # Charge is calculated with the hardcoded mass of protons
         mi = (m + charge * proton) / charge
         return mi
-
-

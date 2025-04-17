@@ -1,8 +1,11 @@
-from typing import Optional, Dict, Any, Pattern, Iterator, Tuple, List, Set
-from collections import defaultdict
 import re
+from collections import defaultdict
+from typing import Any, Dict, Iterator, List, Optional, Pattern, Set, Tuple
+
 from sequal.base_block import BaseBlock
 from sequal.resources import monosaccharides
+
+
 class Modification(BaseBlock):
     """
     Represents a modification block with various properties for sequence analysis.
@@ -31,22 +34,41 @@ class Modification(BaseBlock):
     all_filled : bool, optional
         Whether modification occurs at all expected sites.
     """
-    KNOWN_SOURCES = {"Unimod", "U", "PSI-MOD", "M", "RESID", "R", "XL-MOD", "X", "XLMOD", "GNO", "G", "MOD", "Obs", "Formula", "Glycan"}
 
-    def __init__(self,
-                 value: str,
-                 position: Optional[int] = None,
-                 regex_pattern: Optional[str] = None,
-                 full_name: Optional[str] = None,
-                 mod_type: str = "static",
-                 labile: bool = False,
-                 labile_number: int = 0,
-                 mass: float = 0.0,
-                 all_filled: bool = False,
-                 crosslink_id: Optional[str] = None,
-                 is_crosslink_ref: bool = False,
-                 is_branch_ref: bool = False,
-                    is_branch: bool = False):
+    KNOWN_SOURCES = {
+        "Unimod",
+        "U",
+        "PSI-MOD",
+        "M",
+        "RESID",
+        "R",
+        "XL-MOD",
+        "X",
+        "XLMOD",
+        "GNO",
+        "G",
+        "MOD",
+        "Obs",
+        "Formula",
+        "Glycan",
+    }
+
+    def __init__(
+        self,
+        value: str,
+        position: Optional[int] = None,
+        regex_pattern: Optional[str] = None,
+        full_name: Optional[str] = None,
+        mod_type: str = "static",
+        labile: bool = False,
+        labile_number: int = 0,
+        mass: float = 0.0,
+        all_filled: bool = False,
+        crosslink_id: Optional[str] = None,
+        is_crosslink_ref: bool = False,
+        is_branch_ref: bool = False,
+        is_branch: bool = False,
+    ):
         self._source = None
         self._original_value = value
         self._crosslink_id = crosslink_id
@@ -76,13 +98,23 @@ class Modification(BaseBlock):
 
         super().__init__(value, position=position, branch=True, mass=mass)
 
-        valid_mod_types = {"static", "variable", "terminal", "ambiguous", "crosslink", "branch", "gap"}
+        valid_mod_types = {
+            "static",
+            "variable",
+            "terminal",
+            "ambiguous",
+            "crosslink",
+            "branch",
+            "gap",
+        }
         if (crosslink_id or is_crosslink_ref) and mod_type not in {"crosslink"}:
             mod_type = "crosslink"
         if mod_type not in valid_mod_types:
             raise ValueError(f"mod_type must be one of: {', '.join(valid_mod_types)}")
 
-        self._regex: Optional[Pattern] = re.compile(regex_pattern) if regex_pattern else None
+        self._regex: Optional[Pattern] = (
+            re.compile(regex_pattern) if regex_pattern else None
+        )
 
         self._mod_type = mod_type
         self._labile = labile
@@ -106,7 +138,7 @@ class Modification(BaseBlock):
             return False
 
         # Check for balanced brackets
-        if formula.count('[') != formula.count(']'):
+        if formula.count("[") != formula.count("]"):
             return False
 
         # Remove spaces for processing (allowed by spec)
@@ -116,23 +148,25 @@ class Modification(BaseBlock):
         i = 0
         while i < len(formula_no_spaces):
             # Handle isotopes [13C2]
-            if formula_no_spaces[i] == '[':
-                end_bracket = formula_no_spaces.find(']', i)
+            if formula_no_spaces[i] == "[":
+                end_bracket = formula_no_spaces.find("]", i)
                 if end_bracket == -1:
                     return False
 
                 # Extract isotope content
-                isotope_part = formula_no_spaces[i + 1:end_bracket]
+                isotope_part = formula_no_spaces[i + 1 : end_bracket]
                 # Must start with digits followed by element
-                if not re.match(r'\d+[A-Z][a-z]?(-?\d+)?', isotope_part):
+                if not re.match(r"\d+[A-Z][a-z]?(-?\d+)?", isotope_part):
                     return False
 
                 i = end_bracket + 1
 
                 # Check for cardinality after bracket
-                if i < len(formula_no_spaces) and (formula_no_spaces[i] == '-' or formula_no_spaces[i].isdigit()):
+                if i < len(formula_no_spaces) and (
+                    formula_no_spaces[i] == "-" or formula_no_spaces[i].isdigit()
+                ):
                     start = i
-                    if formula_no_spaces[i] == '-':
+                    if formula_no_spaces[i] == "-":
                         i += 1
                     while i < len(formula_no_spaces) and formula_no_spaces[i].isdigit():
                         i += 1
@@ -142,15 +176,20 @@ class Modification(BaseBlock):
             # Handle regular elements (C12, H, Na+)
             elif formula_no_spaces[i].isupper():
                 # Element symbol (1-2 chars)
-                if i + 1 < len(formula_no_spaces) and formula_no_spaces[i + 1].islower():
+                if (
+                    i + 1 < len(formula_no_spaces)
+                    and formula_no_spaces[i + 1].islower()
+                ):
                     i += 2
                 else:
                     i += 1
 
                 # Check for cardinality
-                if i < len(formula_no_spaces) and (formula_no_spaces[i] == '-' or formula_no_spaces[i].isdigit()):
+                if i < len(formula_no_spaces) and (
+                    formula_no_spaces[i] == "-" or formula_no_spaces[i].isdigit()
+                ):
                     start = i
-                    if formula_no_spaces[i] == '-':
+                    if formula_no_spaces[i] == "-":
                         i += 1
                     while i < len(formula_no_spaces) and formula_no_spaces[i].isdigit():
                         i += 1
@@ -171,8 +210,9 @@ class Modification(BaseBlock):
         glycan_clean = glycan.replace(" ", "")
 
         # Build pattern to match monosaccharide with optional number
-        mono_pattern = r'(' + '|'.join(monosaccharides) + r')(\d+)?'
-
+        monos = list(monosaccharides)
+        monos.sort(key=len, reverse=True)
+        mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
         # Check if entire string matches consecutive monosaccharide patterns
         i = 0
         while i < len(glycan_clean):
@@ -253,7 +293,9 @@ class Modification(BaseBlock):
             If no regex pattern was defined for this modification.
         """
         if not self._regex:
-            raise ValueError(f"No regex pattern defined for modification '{self.value}'")
+            raise ValueError(
+                f"No regex pattern defined for modification '{self.value}'"
+            )
 
         for match in self._regex.finditer(seq):
             groups = match.groups()
@@ -266,20 +308,21 @@ class Modification(BaseBlock):
     def to_dict(self) -> Dict[str, Any]:
         """Convert the modification to a dictionary representation."""
         result = super().to_dict()
-        result.update({
-            'source': self._source,
-            'original_value': self._original_value,
-            'regex_pattern': self._regex.pattern if self._regex else None,
-            'full_name': self._full_name,
-            'mod_type': self._mod_type,
-            'labile': self._labile,
-            'labile_number': self._labile_number,
-            'all_filled': self._all_filled,
-            'crosslink_id': self._crosslink_id,
-            'is_crosslink_ref': self._is_crosslink_ref
-        })
+        result.update(
+            {
+                "source": self._source,
+                "original_value": self._original_value,
+                "regex_pattern": self._regex.pattern if self._regex else None,
+                "full_name": self._full_name,
+                "mod_type": self._mod_type,
+                "labile": self._labile,
+                "labile_number": self._labile_number,
+                "all_filled": self._all_filled,
+                "crosslink_id": self._crosslink_id,
+                "is_crosslink_ref": self._is_crosslink_ref,
+            }
+        )
         return result
-
 
     def __eq__(self, other) -> bool:
         """Check if two modifications are equal."""
@@ -288,9 +331,9 @@ class Modification(BaseBlock):
         if not isinstance(other, Modification):
             return False
         return (
-                self._mod_type == other.mod_type and
-                self._labile == other.labile and
-                self._labile_number == other.labile_number
+            self._mod_type == other.mod_type
+            and self._labile == other.labile
+            and self._labile_number == other.labile_number
         )
 
     def __hash__(self) -> int:
@@ -321,16 +364,19 @@ class Modification(BaseBlock):
 
     def __repr__(self) -> str:
         """Return a detailed string representation for debugging."""
-        return (f"Modification(value='{self.value}', position={self.position}, "
-                f"mod_type='{self._mod_type}', labile={self._labile}, "
-                f"crosslink_id={self._crosslink_id!r}, is_crosslink_ref={self._is_crosslink_ref}, "
-                f"is_branch={self._is_branch}, is_branch_ref={self._is_branch_ref})")
+        return (
+            f"Modification(value='{self.value}', position={self.position}, "
+            f"mod_type='{self._mod_type}', labile={self._labile}, "
+            f"crosslink_id={self._crosslink_id!r}, is_crosslink_ref={self._is_crosslink_ref}, "
+            f"is_branch={self._is_branch}, is_branch_ref={self._is_branch_ref})"
+        )
+
 
 class ModificationMap:
     """
     Maps modifications to their positions in a sequence for quick lookup.
 
-    This class provides efficient access to modification positions and 
+    This class provides efficient access to modification positions and
     modification objects by name or position.
 
     Parameters
@@ -346,31 +392,33 @@ class ModificationMap:
     mod_position_dict : Dict[str, List[int]], optional
         Pre-computed dict of modification positions.
     """
-    def __init__(self, 
-                 seq: str, 
-                 mods: List["Modification"], 
-                 ignore_positions: Optional[Set[int]] = None,
-                 parse_position: bool = True, 
-                 mod_position_dict: Optional[Dict[str, List[int]]] = None):
-        
+
+    def __init__(
+        self,
+        seq: str,
+        mods: List["Modification"],
+        ignore_positions: Optional[Set[int]] = None,
+        parse_position: bool = True,
+        mod_position_dict: Optional[Dict[str, List[int]]] = None,
+    ):
         self.seq = seq
         self.ignore_positions = ignore_positions or set()
-        
+
         # Maps mod name to Modification object
         self.mod_dict_by_name: Dict[str, "Modification"] = {}
-        
+
         # Maps mod name to list of positions
         self.mod_position_dict: Dict[str, List[int]] = mod_position_dict or {}
-        
+
         # Maps position to list of modifications at that position
         self.position_to_mods: Dict[int, List["Modification"]] = defaultdict(list)
-        
+
         self._build_mappings(mods, parse_position)
-    
+
     def _build_mappings(self, mods: List["Modification"], parse_position: bool) -> None:
         """
         Build internal mappings between modifications and positions.
-        
+
         Parameters
         ----------
         mods : List[Modification]
@@ -381,7 +429,7 @@ class ModificationMap:
         for mod in mods:
             mod_name = str(mod)
             self.mod_dict_by_name[mod_name] = mod
-            
+
             if parse_position:
                 positions = []
                 try:
@@ -392,7 +440,7 @@ class ModificationMap:
                 except ValueError:
                     # No regex pattern defined, skip position parsing
                     pass
-                
+
                 self.mod_position_dict[mod_name] = positions
 
     def get_mod_positions(self, mod_name: str) -> Optional[List[int]]:
@@ -426,7 +474,7 @@ class ModificationMap:
             The Modification object, or None if not found.
         """
         return self.mod_dict_by_name.get(mod_name)
-    
+
     def get_mods_at_position(self, position: int) -> List["Modification"]:
         """
         Get all modifications at a specific position.
@@ -442,8 +490,10 @@ class ModificationMap:
             List of modifications at the specified position.
         """
         return self.position_to_mods.get(position, [])
-    
-    def has_mod_at_position(self, position: int, mod_name: Optional[str] = None) -> bool:
+
+    def has_mod_at_position(
+        self, position: int, mod_name: Optional[str] = None
+    ) -> bool:
         """
         Check if a position has any modification or a specific modification.
 
@@ -465,7 +515,7 @@ class ModificationMap:
         if mod_name is None:
             return True
         return any(str(mod) == mod_name for mod in mods)
-    
+
     def to_dict(self) -> Dict[str, Any]:
         """
         Convert the modification map to a dictionary representation.
@@ -476,9 +526,10 @@ class ModificationMap:
             Dictionary containing the map's data.
         """
         return {
-            'sequence': self.seq,
-            'modifications': {
+            "sequence": self.seq,
+            "modifications": {
                 name: [pos for pos in positions]
-                for name, positions in self.mod_position_dict.items() if positions
-            }
+                for name, positions in self.mod_position_dict.items()
+                if positions
+            },
         }

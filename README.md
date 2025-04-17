@@ -35,7 +35,7 @@ Using Sequence Object with Modified Protein Sequence
 
 ```python
 from sequal.sequence import Sequence
-#Using Sequence object with modified protein sequence. []{}() could all be used as modification annotation. 
+#Using Sequence object with modified protein sequence. []{}() could all be used as modification annotation.
 
 seq = Sequence("TEN[HexNAc]ST")
 for i in seq.seq:
@@ -43,7 +43,7 @@ for i in seq.seq:
 
 seq = Sequence("TEN[HexNAc][HexNAc]ST")
 for i in seq.seq:
-    print(i, i.mods) #should print N [HexNAc, HexNAc] on the 3rd amino acid   
+    print(i, i.mods) #should print N [HexNAc, HexNAc] on the 3rd amino acid
 
 # .mods property provides an access to all amino acids at this amino acid
 

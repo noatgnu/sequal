@@ -31,11 +31,13 @@ def calculate_mass(seq, mass_dict=None, N_terminus=0, O_terminus=0, with_water=T
                 if i.value in mass_dict:
                     mass += mass_dict[i.value]
                 else:
-                    raise ValueError('Block {} not found in mass_dict'.format(i.value))
+                    raise ValueError("Block {} not found in mass_dict".format(i.value))
             else:
                 raise ValueError(
-                    'Block {} mass is not available in mass attribute and no additional mass_dict was supplied'.format(
-                        i.value))
+                    "Block {} mass is not available in mass attribute and no additional mass_dict was supplied".format(
+                        i.value
+                    )
+                )
         else:
             mass += i.mass
         if i.mods:
@@ -45,17 +47,15 @@ def calculate_mass(seq, mass_dict=None, N_terminus=0, O_terminus=0, with_water=T
                         if m.value in mass_dict:
                             mass += mass_dict[m.value]
                         else:
-                            raise ValueError('Block {} not found in mass_dict'.format(m.value))
+                            raise ValueError(
+                                "Block {} not found in mass_dict".format(m.value)
+                            )
                     else:
                         raise ValueError(
-                            'Block {} mass is not available in mass attribute and no additional mass_dict was supplied'.format(
-                                m.value))
+                            "Block {} mass is not available in mass attribute and no additional mass_dict was supplied".format(
+                                m.value
+                            )
+                        )
                 else:
                     mass += m.mass
     return mass + N_terminus + O_terminus
-
-
-
-
-
-

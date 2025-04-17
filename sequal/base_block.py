@@ -1,5 +1,5 @@
-from typing import Optional, Any, Dict
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Optional
 
 
 class BaseBlock(ABC):
@@ -10,11 +10,13 @@ class BaseBlock(ABC):
     amino acids, modifications, and other biochemical components.
     """
 
-    def __init__(self,
-                 value: str,
-                 position: Optional[int] = None,
-                 branch: bool = False,
-                 mass: Optional[float] = None):
+    def __init__(
+        self,
+        value: str,
+        position: Optional[int] = None,
+        branch: bool = False,
+        mass: Optional[float] = None,
+    ):
         """
         Initialize a BaseBlock object.
 
@@ -85,20 +87,22 @@ class BaseBlock(ABC):
             Dictionary containing the block's attributes.
         """
         return {
-            'value': self._value,
-            'position': self._position,
-            'branch': self._branch,
-            'mass': self._mass,
-            'extra': self._extra
+            "value": self._value,
+            "position": self._position,
+            "branch": self._branch,
+            "mass": self._mass,
+            "extra": self._extra,
         }
 
     def __eq__(self, other) -> bool:
         """Check if two blocks are equal."""
         if not isinstance(other, BaseBlock):
             return False
-        return (self._value == other.value and
-                self._position == other.position and
-                self._branch == other.branch)
+        return (
+            self._value == other.value
+            and self._position == other.position
+            and self._branch == other.branch
+        )
 
     def __hash__(self) -> int:
         """Generate a hash for the block."""
