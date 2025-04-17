@@ -14,7 +14,7 @@ To install Sequal, use pip:
 
 ```sh
 pip install sequal
-````
+```
 
 ## Usage
 

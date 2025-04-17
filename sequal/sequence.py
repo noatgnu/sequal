@@ -11,524 +11,910 @@ Functions:
     variable_position_placement_generator(positions): Generates different position combinations for modifications.
     ordered_serialize_position_dict(positions): Serializes a dictionary of positions in an ordered manner.
 """
+from typing import Dict, List, Set, Iterator, Iterable, Any, Optional, Union, Type, Tuple, TypeVar, Generic
+from collections import Counter, defaultdict
+import itertools
+import json
 import re
-from typing import Set, Any, List
+from copy import deepcopy
 
 from sequal.amino_acid import AminoAcid
 from sequal.modification import Modification, ModificationMap
-from copy import deepcopy
-import itertools
-from json import dumps
+from sequal.base_block import BaseBlock
+from sequal.proforma import ProFormaParser
 
 mod_pattern = re.compile(r"[\(|\[]+([^\)]+)[\)|\]]+")
 mod_enclosure_start = {"(", "[", "{"}
 mod_enclosure_end = {")", "]", "}"}
+T = TypeVar('T', bound='BaseBlock')
 
 # Base sequence object for peptide or protein sequences and their fragments
+
+
 class Sequence:
     """
     Represents a sequence of amino acids or modifications.
 
-    :param seq: iterable
-        A string or array of strings or array of AminoAcid objects. The parser will recursively look over each string at
-        the deepest level and identify individual modifications or amino acids for processing.
-    :param encoder: BaseBlock, optional
-        Class for encoding the sequence (default is AminoAcid).
-    :param mods: dict, optional
-        Dictionary whose keys are the positions within the sequence and values are arrays of modifications at those positions (default is None).
-    :param parse: bool, optional
-        Whether to parse the sequence (default is True).
-    :param parser_ignore: list, optional
-        List of items to ignore during parsing (default is None).
-    :param mod_position: str, optional
-        Indicates the position of the modifications relative to the base block it is supposed to modify (default is "right").
+    This class provides methods for building, modifying, and analyzing sequences
+    of biochemical blocks such as amino acids with their modifications.
+
+    Parameters
+    ----------
+    seq : Union[str, List, 'Sequence']
+        A string, list of strings, or list of AminoAcid objects. The parser will
+        recursively parse each element to identify amino acids and modifications.
+    encoder : Type[BaseBlock], optional
+        Class for encoding sequence elements, default is AminoAcid.
+    mods : Optional[Dict[int, Union[Modification, List[Modification]]]], optional
+        Dictionary mapping positions to modifications at those positions.
+    parse : bool, optional
+        Whether to parse the sequence, default is True.
+    parser_ignore : Optional[List[str]], optional
+        List of elements to ignore during parsing.
+    mod_position : str, optional
+        Indicates the position of modifications relative to their residue ("left" or "right").
     """
 
-    seq: List[Any]
+    # Regular expression patterns for parsing
+    _MOD_PATTERN = re.compile(r"[\(|\[]+([^\)]+)[\)|\]]+")
+    _MOD_ENCLOSURE_START = {"(", "[", "{"}
+    _MOD_ENCLOSURE_END = {")", "]", "}"}
 
-    def __init__(self, seq, encoder=AminoAcid, mods=None, parse=True, parser_ignore=None, mod_position="right"):
-        if type(seq) is not Sequence:
-            if not mods:
-                self.mods = {}
-            else:
-                self.mods = mods
-            self.encoder = encoder
-            if not parser_ignore:
-                self.parser_ignore = []
-            else:
-                self.parser_ignore = parser_ignore
-            self.seq = []
-            current_mod = []
-            current_position = 0
-            if parse:
-                self.sequence_parse(current_mod, current_position, mod_position, mods, seq)
+    def __init__(
+            self,
+            seq: Union[str, List, 'Sequence'],
+            encoder: Type[BaseBlock] = AminoAcid,
+            mods: Optional[Dict[int, Union[Modification, List[Modification]]]] = None,
+            parse: bool = True,
+            parser_ignore: Optional[List[str]] = None,
+            mod_position: str = "right",
+            chains: Optional[List['Sequence']] = None
+    ):
+        # Initialize basic attributes
+        self.encoder = encoder
+        self.parser_ignore = parser_ignore or []
+        self.seq: List[AminoAcid] = []
+        self.chains = chains or [self]
+        self.is_multi_chain = False
+        self.mods = defaultdict(list)
 
+        if isinstance(seq, Sequence):
+            for attr_name, attr_value in seq.__dict__.items():
+                if attr_name != "mods":
+                    setattr(self, attr_name, deepcopy(attr_value))
+            if hasattr(seq, 'mods'):
+                for pos, mod_list in seq.mods.items():
+                    self.mods[pos] = deepcopy(mod_list)
         else:
-            for k in seq.__dict__:
-                if k != "mods":
-                    setattr(self, k, deepcopy(seq.__dict__[k]))
+            if mods:
+                for pos, mod_items in mods.items():
+                    if isinstance(mod_items, list):
+                        self.mods[pos] = deepcopy(mod_items)
+                    else:
+                        self.mods[pos].append(mod_items)
+
+            if parse:
+                self._parse_sequence(seq, mod_position)
+
+        # Cache sequence length for performance
         self.seq_length = len(self.seq)
 
-    def __getitem__(self, key):
-        return self.seq[key]
+    @classmethod
+    def from_proforma(self, proforma_str):
+        """Create a Sequence object from a ProForma string with multi-chain support."""
+        # Check for multi-chain notation
+        if '//' in proforma_str:
+            chains = proforma_str.split('//')
+            # Create the first chain
+            main_seq = self.from_proforma(chains[0])
+            main_seq.is_multi_chain = True
+            main_seq.chains = [main_seq]
 
-    def __len__(self):
-        return self.seq_length
+            # Create and add additional chains
+            for chain_str in chains[1:]:
+                chain = self.from_proforma(chain_str)
+                main_seq.chains.append(chain)
 
-    def __repr__(self):
-        a = ""
-        for i in self.seq:
-            a += str(i)
-        return a
+            return main_seq
+        else:
+            # Parse single chain (existing implementation)
+            base_sequence, modifications = ProFormaParser.parse(proforma_str)
+            seq = self(base_sequence)
 
-    def __str__(self):
-        a = ""
-        for i in self.seq:
-            a += str(i)
-        return a
+            # Apply modifications
+            for pos, mods in modifications.items():
+                for mod in mods:
+                    if pos == -1:  # N-terminal
+                        seq.mods[-1].append(mod)
+                    elif pos == -2:  # C-terminal
+                        seq.mods[-2].append(mod)
+                    else:
+                        seq.seq[pos].add_modification(mod)
 
-    def sequence_parse(self, current_mod, current_position, mod_position, mods, seq):
+            return seq
+
+    def _chain_to_proforma(self, chain):
+        result = ""
+
+        if -1 in chain.mods:
+            for mod in chain.mods[-1]:
+                result += f"[{mod.value}]-"
+
+        for i, aa in enumerate(chain.seq):
+            result += aa.value
+            if aa.mods:
+                # Track references we've already added
+                crosslink_refs_added = set()
+                branch_refs_added = False
+
+                for mod in aa.mods:
+                    if mod.mod_type == "ambiguous":
+                        result += f"{{{mod.value}}}"
+                    elif hasattr(mod, '_is_branch_ref') and mod._is_branch_ref:
+                        # Only add branch reference once per residue
+                        if not branch_refs_added:
+                            result += f"[#BRANCH]"
+                            branch_refs_added = True
+                    elif hasattr(mod, '_is_crosslink_ref') and mod._is_crosslink_ref:
+                        # Only add each crosslink reference once
+                        if mod._crosslink_id not in crosslink_refs_added:
+                            result += f"[#{mod._crosslink_id}]"
+                            crosslink_refs_added.add(mod._crosslink_id)
+                    else:
+                        if hasattr(mod, 'source') and mod.source:
+                            result += f"[{mod.source}:{mod.value}"
+                        else:
+                            result += f"[{mod.value}"
+
+                        # Add branch or crosslink identifier
+                        if hasattr(mod, '_is_branch') and mod._is_branch:
+                            result += "#BRANCH"
+                        elif hasattr(mod, '_crosslink_id') and mod._crosslink_id:
+                            result += f"#{mod._crosslink_id}"
+
+                        result += "]"
+
+        if -2 in chain.mods:
+            for mod in chain.mods[-2]:
+                result += f"-[{mod.value}]"
+        return result
+
+    def to_proforma(self):
+        if hasattr(self, 'is_multi_chain') and self.is_multi_chain:
+            result = "//".join(self._chain_to_proforma(chain) for chain in self.chains)
+            return result
+        else:
+            return self._chain_to_proforma(self)
+
+    def _parse_sequence(self, seq: Union[str, List], mod_position: str) -> None:
         """
-        Parse the sequence input.
+        Parse the input sequence into a list of BaseBlock objects.
 
-        :param current_mod: list
-            List of current modifications.
-        :param current_position: int
-            Current iterating amino acid position from the input sequence.
-        :param mod_position: str
-            Modification position relative to the modified residue.
-        :param mods: dict
-            External modification input.
-        :param seq: iterable
-            Sequence input.
+        Parameters
+        ----------
+        seq : Union[str, List]
+            The input sequence to parse.
+        mod_position : str
+            Position of modifications relative to residues.
         """
-        for b, m in self.__load_sequence_iter(iter(seq)):
-            if not m:
+        current_mod = []
+        current_position = 0
+
+        # Validate mod_position
+        if mod_position not in {"left", "right"}:
+            raise ValueError("mod_position must be either 'left' or 'right'")
+
+        # Parse sequence elements
+        for block, is_mod in self._sequence_iterator(iter(seq)):
+            if not is_mod:
+                # Handle an amino acid/residue
                 if mod_position == "left":
-                    if type(b) == AminoAcid:
-                        current_unit = b
+                    # Handle left-positioned modifications
+                    if isinstance(block, self.encoder):
+                        current_unit = block
                         current_unit.position = current_position
                     else:
-                        current_unit = self.encoder(b, current_position)
+                        current_unit = self.encoder(block, current_position)
 
-                    if current_mod and not mods:
-                        for i in current_mod:
-                            current_unit.set_modification(i)
-                    elif current_position in self.mods and current_unit:
-                        if type(self.mods[current_position]) == Modification:
-                            current_unit.set_modification(self.mods[current_position])
-                        else:
-                            for mod in self.mods[current_position]:
-                                current_unit.set_modification(mod)
-
+                    # Apply pending modifications
+                    self._apply_modifications(current_unit, current_position, current_mod)
                     self.seq.append(deepcopy(current_unit))
-
                     current_mod = []
-                if mod_position == "right":
 
-                    if current_mod and not mods:
-                        for i in current_mod:
-                            self.seq[current_position - 1].set_modification(i)
-                    if type(b) == AminoAcid:
-                        current_unit = b
+                else:  # mod_position == "right"
+                    # Apply modifications to previous residue
+                    if current_mod and current_position > 0:
+                        for mod in current_mod:
+                            self.seq[current_position - 1].add_modification(mod)
+
+                    # Create new residue
+                    if isinstance(block, self.encoder):
+                        current_unit = block
                         current_unit.position = current_position
                     else:
-                        current_unit = self.encoder(b, current_position)
+                        current_unit = self.encoder(block, current_position)
 
-                    if current_position in self.mods and current_unit:
-                        if type(self.mods[current_position]) == Modification:
-                            current_unit.set_modification(self.mods[current_position])
-
+                    # Apply configured modifications
+                    if current_position in self.mods:
+                        mods_to_apply = self.mods[current_position]
+                        if isinstance(mods_to_apply, list):
+                            for mod in mods_to_apply:
+                                current_unit.add_modification(mod)
                         else:
-                            for mod in self.mods[current_position]:
-                                current_unit.set_modification(mod)
+                            current_unit.add_modification(mods_to_apply)
 
                     self.seq.append(deepcopy(current_unit))
-
                     current_mod = []
+
                 current_position += 1
-            else:
-                if not mods:
-                    # current_mod.append(Modification(b[1:-1]))
-                    if mod_position == "right":
-                        self.seq[current_position-1]\
-                            .set_modification(Modification(b[1:-1]))
+
+            else:  # is_mod is True
+                # Handle a modification
+                if not self.mods:  # Only if not using predefined mods dict
+                    # Extract mod string and create Modification object
+                    mod_value = self._extract_mod_value(block)
+                    mod_obj = Modification(mod_value)
+
+                    if mod_position == "right" and current_position > 0:
+                        # Apply directly to previous residue for right positioning
+                        self.seq[current_position - 1].add_modification(mod_obj)
                     else:
-                        current_mod.append(Modification(b[1:-1]))
+                        # Store for later application with left positioning
+                        current_mod.append(mod_obj)
 
-    def __load_sequence_iter(self, seq=None, iter_seq=None):
+    def _apply_modifications(
+            self,
+            block: BaseBlock,
+            position: int,
+            pending_mods: List[Modification]
+    ) -> None:
         """
-        Load the sequence iterator.
+        Apply modifications to a block.
 
-        :param seq: iterable, optional
-            Sequence input.
-        :param iter_seq: iterator, optional
-            Sequence iterator.
-        :yield: tuple
-            A tuple containing the block and modification status.
+        Parameters
+        ----------
+        block : BaseBlock
+            The block to modify.
+        position : int
+            Position of the block.
+        pending_mods : List[Modification]
+            List of pending modifications to apply.
+        """
+        # Apply pending modifications (from parsing)
+        for mod in pending_mods:
+            block.add_modification(mod)
+
+        # Apply configured modifications (from mods dict)
+        if position in self.mods:
+            mods_to_apply = self.mods[position]
+            if isinstance(mods_to_apply, list):
+                for mod in mods_to_apply:
+                    block.add_modification(mod)
+            else:
+                block.add_modification(mods_to_apply)
+
+    def _extract_mod_value(self, mod_str: str) -> str:
+        """
+        Extract modification value from a string.
+
+        Parameters
+        ----------
+        mod_str : str
+            String containing modification.
+
+        Returns
+        -------
+        str
+            Extracted modification value.
+        """
+        # Find content between brackets/parentheses
+        if mod_str[0] in self._MOD_ENCLOSURE_START and mod_str[-1] in self._MOD_ENCLOSURE_END:
+            return mod_str[1:-1]
+        return mod_str
+
+    def _sequence_iterator(self, seq_iter: Iterator) -> Iterator[Tuple[Any, bool]]:
+        """
+        Iterate through sequence elements, identifying blocks and modifications.
+
+        Parameters
+        ----------
+        seq_iter : Iterator
+            Iterator over sequence elements.
+
+        Yields
+        ------
+        Tuple[Any, bool]
+            Tuple of (block, is_modification)
         """
         mod_open = 0
         block = ""
-        mod = False
-        if not iter_seq:
-            iter_seq = iter(seq)
-        for i in iter_seq:
-            if type(i) == str:
-                if i in mod_enclosure_start:
-                    mod = True
+        is_mod = False
+
+        for item in seq_iter:
+            if isinstance(item, str):
+                if item in self._MOD_ENCLOSURE_START:
+                    is_mod = True
                     mod_open += 1
-                elif i in mod_enclosure_end:
+                elif item in self._MOD_ENCLOSURE_END:
                     mod_open -= 1
-                block += i
-            elif type(i) == AminoAcid:
-                block = i
+                block += item
+            elif isinstance(item, self.encoder):
+                block = item
             else:
-                yield from self.__load_sequence_iter(iter_seq=iter_seq)
-            if mod_open == 0:
-                yield (block, mod)
-                mod = False
+                # Recursively handle nested iterables
+                yield from self._sequence_iterator(iter(item))
+                continue
+
+            if mod_open == 0 and block:
+                yield (block, is_mod)
+                is_mod = False
                 block = ""
 
-    def __iter__(self):
+    def __getitem__(self, key: Union[int, slice]) -> Union[BaseBlock, 'Sequence']:
+        """
+        Get item or slice from sequence.
+
+        Parameters
+        ----------
+        key : Union[int, slice]
+            Index or slice to retrieve.
+
+        Returns
+        -------
+        Union[BaseBlock, Sequence]
+            Single block or new Sequence containing the slice.
+        """
+        if isinstance(key, slice):
+            new_seq = Sequence(self, parse=False)
+            new_seq.seq = self.seq[key]
+            new_seq.seq_length = len(new_seq.seq)
+            return new_seq
+        return self.seq[key]
+
+    def __len__(self) -> int:
+        """Return the length of the sequence."""
+        return self.seq_length
+
+    def __repr__(self) -> str:
+        """Return a programmatic representation of the sequence."""
+        return f"Sequence('{str(self)}')"
+
+    def __str__(self) -> str:
+        """Return a string representation of the sequence."""
+        return "".join(str(block) for block in self.seq)
+
+    def __iter__(self) -> 'Sequence':
+        """Initialize iteration over the sequence."""
         self.current_iter_count = 0
         return self
 
-    def __next__(self):
+    def __next__(self) -> BaseBlock:
+        """Get the next block in the sequence."""
         if self.current_iter_count == self.seq_length:
             raise StopIteration
         result = self.seq[self.current_iter_count]
         self.current_iter_count += 1
         return result
 
-    def add_modifications(self, mod_dict):
-        """
-        Add modifications to the sequence.
+    def __eq__(self, other: object) -> bool:
+        """Check if two sequences are equal."""
+        if not isinstance(other, Sequence):
+            return False
+        if self.seq_length != other.seq_length:
+            return False
+        return all(a == b for a, b in zip(self.seq, other.seq))
 
-        :param mod_dict: dict
-            Dictionary of modifications to add.
+    def add_modifications(self, mod_dict: Dict[int, List[Modification]]) -> None:
+        """
+        Add modifications to residues at specified positions.
+
+        Parameters
+        ----------
+        mod_dict : Dict[int, List[Modification]]
+            Dictionary mapping positions to lists of modifications.
         """
         for aa in self.seq:
             if aa.position in mod_dict:
                 for mod in mod_dict[aa.position]:
-                    aa.set_modification(mod)
+                    aa.add_modification(mod)
 
-    def to_stripped_string(self):
+    def to_stripped_string(self) -> str:
         """
         Return the sequence as a string without any modification annotations.
 
-        :return: str
+        Returns
+        -------
+        str
             The stripped sequence string.
         """
-        seq = ""
-        for i in self.seq:
-            seq += i.value
-        return seq
+        return "".join(block.value for block in self.seq)
 
-    def to_string_customize(self, data, annotation_placement="right", block_separator="", annotation_enclose_characters=("[", "]"),
-                            individual_annotation_enclose=False, individual_annotation_enclose_characters=("[", "]"),
-                            individual_annotation_separator=""):
+    def to_string_customize(
+            self,
+            data: Dict[int, Union[str, List[str]]],
+            annotation_placement: str = "right",
+            block_separator: str = "",
+            annotation_enclose_characters: Tuple[str, str] = ("[", "]"),
+            individual_annotation_enclose: bool = False,
+            individual_annotation_enclose_characters: Tuple[str, str] = ("[", "]"),
+            individual_annotation_separator: str = ""
+    ) -> str:
         """
         Customize the sequence string with annotations.
 
-        :param data: dict
-            A dictionary where the key is the index position of the amino acid residue and the value is an iterable containing the items to be included in the sequence.
-        :param annotation_placement: str, optional
-            Whether the information should be included on the right or left of the residue (default is "right").
-        :param block_separator: str, optional
-            Separator between each block of annotation information (default is "").
-        :param annotation_enclose_characters: tuple, optional
-            Enclosure characters for each annotation cluster (default is ("[", "]")).
-        :param individual_annotation_enclose: bool, optional
-            Whether each individual annotation should be enclosed (default is False).
-        :param individual_annotation_enclose_characters: tuple, optional
-            Enclosure characters for each individual annotation (default is ("[", "]")).
-        :param individual_annotation_separator: str, optional
-            Separator for each individual annotation (default is "").
-        :return: str
-            The customized sequence string.
-        """
-        assert annotation_placement in {"left", "right"}
-        seq = []
-        for i in range(len(self.seq)):
-            seq.append(self.seq[i].value)
-            if i in data:
-                annotation = []
-                if individual_annotation_enclose:
-                    for v in data[i]:
-                        annotation.append("{}{}{}".format(individual_annotation_enclose_characters[0], v, individual_annotation_enclose_characters[1]))
-                else:
-                    annotation = data[i]
-                if type(annotation) == str:
-                    ann = annotation
-                else:
-                    ann = individual_annotation_separator.join(annotation)
-                if annotation_enclose_characters:
-                    seq.append("{}{}{}".format(annotation_enclose_characters[0], ann, annotation_enclose_characters[1]))
-                else:
-                    seq.append(individual_annotation_separator.join(ann))
-        return block_separator.join(seq)
+        Parameters
+        ----------
+        data : Dict[int, Union[str, List[str]]]
+            Dictionary mapping positions to annotations.
+        annotation_placement : str, optional
+            Placement of annotations ("left" or "right").
+        block_separator : str, optional
+            Separator between blocks.
+        annotation_enclose_characters : Tuple[str, str], optional
+            Characters to enclose annotation groups.
+        individual_annotation_enclose : bool, optional
+            Whether to enclose individual annotations.
+        individual_annotation_enclose_characters : Tuple[str, str], optional
+            Characters to enclose individual annotations.
+        individual_annotation_separator : str, optional
+            Separator between individual annotations.
 
-    def find_with_regex(self, motif, ignore=None):
+        Returns
+        -------
+        str
+            Customized sequence string with annotations.
+        """
+        if annotation_placement not in {"left", "right"}:
+            raise ValueError("annotation_placement must be either 'left' or 'right'")
+
+        elements = []
+
+        for i in range(len(self.seq)):
+            # Add annotation before residue if placement is left
+            if annotation_placement == "left" and i in data:
+                annotation = self._format_annotation(
+                    data[i],
+                    individual_annotation_enclose,
+                    individual_annotation_enclose_characters,
+                    individual_annotation_separator,
+                    annotation_enclose_characters
+                )
+                elements.append(annotation)
+
+            # Add residue
+            elements.append(self.seq[i].value)
+
+            # Add annotation after residue if placement is right
+            if annotation_placement == "right" and i in data:
+                annotation = self._format_annotation(
+                    data[i],
+                    individual_annotation_enclose,
+                    individual_annotation_enclose_characters,
+                    individual_annotation_separator,
+                    annotation_enclose_characters
+                )
+                elements.append(annotation)
+
+        return block_separator.join(elements)
+
+    def _format_annotation(
+            self,
+            annotations: Union[str, List[str]],
+            individual_enclose: bool,
+            individual_enclose_chars: Tuple[str, str],
+            separator: str,
+            group_enclose_chars: Optional[Tuple[str, str]]
+    ) -> str:
+        """
+        Format annotation strings.
+
+        Parameters
+        ----------
+        annotations : Union[str, List[str]]
+            Annotations to format.
+        individual_enclose : bool
+            Whether to enclose individual annotations.
+        individual_enclose_chars : Tuple[str, str]
+            Characters to enclose individual annotations.
+        separator : str
+            Separator between annotations.
+        group_enclose_chars : Optional[Tuple[str, str]]
+            Characters to enclose the entire annotation group.
+
+        Returns
+        -------
+        str
+            Formatted annotation string.
+        """
+        if isinstance(annotations, str):
+            ann_text = annotations
+        else:
+            if individual_enclose:
+                enclosed_annotations = [
+                    f"{individual_enclose_chars[0]}{item}{individual_enclose_chars[1]}"
+                    for item in annotations
+                ]
+                ann_text = separator.join(enclosed_annotations)
+            else:
+                ann_text = separator.join(annotations)
+
+        if group_enclose_chars:
+            return f"{group_enclose_chars[0]}{ann_text}{group_enclose_chars[1]}"
+        return ann_text
+
+    def find_with_regex(
+            self,
+            motif: str,
+            ignore: Optional[List[bool]] = None
+    ) -> Iterator[slice]:
         """
         Find positions in the sequence that match a given regex motif.
 
-        :param motif: str
-            The regex pattern to search for in the sequence.
-        :param ignore: list of bool, optional
-            A list indicating positions to ignore in the sequence. If provided, positions corresponding to True values will be ignored (default is None).
+        Parameters
+        ----------
+        motif : str
+            Regex pattern to search for.
+        ignore : Optional[List[bool]], optional
+            Positions to ignore (True = ignore).
 
-        :yield: slice
-            A slice object representing the start and end positions of each match in the sequence.
+        Yields
+        ------
+        slice
+            Slice representing match position.
         """
         pattern = re.compile(motif)
-        new_str = ""
+
         if ignore is not None:
-            for i in range(len(ignore)):
-                if not ignore[i]:
-                    new_str += self.seq[i].value
+            # Build string excluding ignored positions
+            seq_str = "".join(
+                self.seq[i].value for i in range(len(ignore)) if not ignore[i]
+            )
         else:
-            new_str = self.to_stripped_string()
+            seq_str = self.to_stripped_string()
 
-        for i in pattern.finditer(new_str):
-
-            if not i.groups():
-                yield slice(i.start(), i.end())
+        for match in pattern.finditer(seq_str):
+            if not match.groups():
+                yield slice(match.start(), match.end())
             else:
-                for m in range(1, len(i.groups()) + 1):
-                    yield slice(i.start(m), i.end(m))
+                for group_idx in range(1, len(match.groups()) + 1):
+                    yield slice(match.start(group_idx), match.end(group_idx))
 
-    def gaps(self):
+    def gaps(self) -> List[bool]:
         """
         Identify gaps in the sequence.
 
-        This method returns a list of boolean values indicating the presence of gaps in the sequence. A gap is represented by a '-' character.
-
-        :return: list of bool
-            A list where each element is True if the corresponding position in the sequence is a gap, and False otherwise.
+        Returns
+        -------
+        List[bool]
+            List where True indicates a gap at that position.
         """
-        s = [False for i in range(len(self.seq))]
-        for i in range(len(s)):
-            if self.seq[i].value == '-':
-                s[i] = True
+        return [block.value == '-' for block in self.seq]
 
-        return s
-
-    def count(self, char, start, end):
+    def count(self, char: str, start: int, end: int) -> int:
         """
-        Count the occurrences of a character in the sequence within a specified range.
+        Count occurrences of a character in a range.
 
-        :param char: str
-            The character to count in the sequence.
-        :param start: int
-            The starting index of the range to count the character.
-        :param end: int
-            The ending index of the range to count the character.
+        Parameters
+        ----------
+        char : str
+            Character to count.
+        start : int
+            Start position.
+        end : int
+            End position.
 
-        :return: int
-            The number of occurrences of the character in the specified range.
+        Returns
+        -------
+        int
+            Number of occurrences.
         """
         return self.to_stripped_string().count(char, start, end)
 
-def count_unique_elements(seq):
+    def to_dict(self) -> Dict[str, Any]:
+        """
+        Convert the sequence to a dictionary representation.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary with sequence data.
+        """
+        # Collect all modifications by position
+        mods_by_position = {}
+        for i, aa in enumerate(self.seq):
+            if hasattr(aa, 'mods') and aa.mods:
+                mods_by_position[i] = [mod.to_dict() for mod in aa.mods]
+
+        return {
+            'sequence': self.to_stripped_string(),
+            'modifications': mods_by_position
+        }
+
+
+def count_unique_elements(seq: Iterable[T]) -> Dict[str, int]:
     """
     Count unique elements in a sequence.
 
-    This function iterates through the sequence and counts the occurrences of each unique element, including modifications.
+    Parameters
+    ----------
+    seq : Iterable[BaseBlock]
+        The sequence of blocks to count elements from. Each element should
+        have a `value` attribute and optionally a `mods` attribute.
 
-    :param seq: iterable
-        The sequence to count unique elements from. Each element should have a `value` attribute and optionally a `mods` attribute.
-    :return: dict
-        A dictionary where keys are unique element values and values are their counts.
+    Returns
+    -------
+    Dict[str, int]
+        Dictionary where keys are element values and values are their counts.
+
+    Examples
+    --------
+    >>> from sequal.sequence import Sequence
+    >>> seq = Sequence("ACDEFG")
+    >>> counts = count_unique_elements(seq)
+    >>> sorted(counts.items())
+    [('A', 1), ('C', 1), ('D', 1), ('E', 1), ('F', 1), ('G', 1)]
     """
-    elements = {}
-    for i in seq:
-        if i.value not in elements:
-            elements[i.value] = 0
-        elements[i.value] += 1
-        if i.mods:
-            for m in i.mods:
-                if m.value not in elements:
-                    elements[m.value] = 0
-                elements[m.value] += 1
-    return elements
+    if not seq:
+        return {}
+
+    elements = Counter()
+
+    for item in seq:
+        elements[item.value] += 1
+
+        # Count modifications if present
+        if hasattr(item, 'mods') and item.mods:
+            for mod in item.mods:
+                elements[mod.value] += 1
+
+    return dict(elements)
 
 
-def variable_position_placement_generator(positions):
+def variable_position_placement_generator(positions: List[int]) -> Iterator[List[int]]:
     """
-    Generate different position combinations for modifications.
+    Generate all possible position combinations for modifications.
 
-    This function uses `itertools.product` to generate a list of tuples with different combinations of 0 and 1.
-    The length of each tuple is the same as the length of the input positions. Using `itertools.compress`,
-    for each output from `itertools.product` paired with input positions, it generates a list of positions
-    where only those with the same index as 1 are yielded.
+    This function creates all possible subsets of positions, including
+    the empty set and the full set.
 
-    :param positions: list
-        A list of all identified positions for the modification on the sequence.
-    :yield: list
-        A list of positions for each combination.
+    Parameters
+    ----------
+    positions : List[int]
+        List of positions where modifications could be applied.
+
+    Yields
+    ------
+    List[int]
+        Each possible combination of positions.
+
+    Examples
+    --------
+    >>> list(variable_position_placement_generator([1, 2]))
+    [[], [1], [2], [1, 2]]
     """
-    for i in itertools.product([0, 1], repeat=len(positions)):
-        yield list(itertools.compress(positions, i))
+    if not positions:
+        yield []
+        return
+
+    # Sort positions for consistent output
+    sorted_positions = sorted(positions)
+
+    # Generate all possible combinations (2^n possibilities)
+    for mask in itertools.product([0, 1], repeat=len(sorted_positions)):
+        yield [pos for pos, include in zip(sorted_positions, mask) if include]
 
 
-def ordered_serialize_position_dict(positions):
+def ordered_serialize_position_dict(positions: Dict[int, Any]) -> str:
     """
-    Serialize a dictionary of positions in an ordered manner.
+    Serialize a dictionary of positions with consistent ordering.
 
-    This function serializes the input dictionary of positions into a JSON string, ensuring the keys are sorted.
+    Parameters
+    ----------
+    positions : Dict[int, Any]
+        Dictionary mapping positions to modifications or other data.
 
-    :param positions: dict
-        The dictionary of positions to serialize.
-    :return: str
-        The serialized JSON string of the positions dictionary.
+    Returns
+    -------
+    str
+        JSON string with sorted keys for consistent serialization.
+
+    Raises
+    ------
+    TypeError
+        If the dictionary contains values that cannot be serialized to JSON.
     """
-    return dumps(positions, sort_keys=True, default=str)
+    try:
+        return json.dumps(positions, sort_keys=True, default=str)
+    except TypeError as e:
+        raise TypeError(f"Could not serialize positions dictionary: {e}") from e
 
 
 class ModdedSequenceGenerator:
     """
-    Generator for creating modified sequences.
+    Generator for sequences with different modification combinations.
 
-    This class generates all possible sequences with static and variable modifications applied to a base sequence.
+    This class creates all possible modified sequences by applying combinations
+    of static and variable modifications to a base sequence.
 
-    :param seq: str
-        The base sequence to be modified.
-    :param variable_mods: list of Modification, optional
-        List of variable modifications to apply (default is None).
-    :param static_mods: list of Modification, optional
-        List of static modifications to apply (default is None).
-    :param used_scenarios: set, optional
-        Set of already used modification scenarios to avoid duplicates (default is None).
-    :param parse_mod_position: bool, optional
-        Whether to parse positions of modifications in the sequence (default is True).
-    :param mod_position_dict: dict, optional
-        Dictionary of modification positions (default is None).
-    :param ignore_position: set, optional
-        Set of positions to ignore when applying modifications (default is None).
+    Parameters
+    ----------
+    seq : str
+        The base sequence to modify.
+    variable_mods : List[Modification], optional
+        List of variable modifications to apply.
+    static_mods : List[Modification], optional
+        List of static modifications to apply.
+    used_scenarios : Set[str], optional
+        Set of serialized modification scenarios to avoid duplicates.
+    parse_mod_position : bool, optional
+        Whether to parse positions using modification regex patterns.
+    mod_position_dict : Dict[str, List[int]], optional
+        Pre-computed positions for modifications.
+    ignore_position : Set[int], optional
+        Set of positions to ignore when applying modifications.
     """
-    used_scenarios_set: Set[str]
 
-    def __init__(self, seq, variable_mods=None, static_mods=None, used_scenarios=None, parse_mod_position=True, mod_position_dict=None, ignore_position=None):
+    def __init__(
+            self,
+            seq: str,
+            variable_mods: Optional[List[Modification]] = None,
+            static_mods: Optional[List[Modification]] = None,
+            used_scenarios: Optional[Set[str]] = None,
+            parse_mod_position: bool = True,
+            mod_position_dict: Optional[Dict[str, List[int]]] = None,
+            ignore_position: Optional[Set[int]] = None
+    ):
         self.seq = seq
-        if static_mods:
-            self.static_mods = static_mods
+        self.static_mods = static_mods or []
+        self.variable_mods = variable_mods or []
+        self.used_scenarios_set = used_scenarios or set()
+        self.ignore_position = ignore_position or set()
 
-            self.static_map = ModificationMap(seq, static_mods, parse_position=parse_mod_position, mod_position_dict=mod_position_dict)
-            self.static_mod_position_dict = self.static_mod_generate()
-        else:
-            self.static_mod_position_dict = {}
-        if ignore_position:
-            self.ignore_position = ignore_position
-        else:
-            self.ignore_position = set()
+        # Initialize modification maps and position dictionaries
+        self.static_mod_position_dict = {}
+        if self.static_mods:
+            self.static_map = ModificationMap(
+                seq,
+                self.static_mods,
+                parse_position=parse_mod_position,
+                mod_position_dict=mod_position_dict
+            )
+            self.static_mod_position_dict = self._generate_static_mod_positions()
 
-        for i in self.static_mod_position_dict:
-            self.ignore_position.add(i)
-
-        if variable_mods:
-            self.variable_mods = variable_mods
-            if self.static_mod_position_dict:
-                self.variable_map = ModificationMap(seq, variable_mods, ignore_positions=self.ignore_position, parse_position=parse_mod_position, mod_position_dict=mod_position_dict)
-            else:
-                self.variable_map = ModificationMap(seq, variable_mods)
-            self.variable_mod_number = len(variable_mods)
-        else:
-            self.variable_mods = None
+            # Update ignore positions with static mod positions
+            self.ignore_position.update(self.static_mod_position_dict.keys())
 
         self.variable_map_scenarios = {}
-        if used_scenarios:
-            self.used_scenarios_set = used_scenarios
-        else:
-            self.used_scenarios_set = set()
-
-    def generate(self):
-        """
-        Generate all possible modified sequences.
-
-        This method yields dictionaries representing different modification scenarios applied to the base sequence.
-
-        :yield: dict
-            A dictionary where keys are positions and values are lists of modifications at those positions.
-        """
         if self.variable_mods:
-            self.variable_mod_generate_scenarios()
-            for i in self.explore_scenarios():
-                a = dict(self.static_mod_position_dict)
-                a.update(i)
-                serialized_a = ordered_serialize_position_dict(a)
-                if serialized_a not in self.used_scenarios_set:
-                    self.used_scenarios_set.add(serialized_a)
-                    yield a
-        else:
-            serialized_a = ordered_serialize_position_dict(self.static_mod_position_dict)
-            if serialized_a not in self.used_scenarios_set:
+            # Create variable modification map, considering ignored positions
+            self.variable_map = ModificationMap(
+                seq,
+                self.variable_mods,
+                ignore_positions=self.ignore_position,
+                parse_position=parse_mod_position,
+                mod_position_dict=mod_position_dict
+            )
+
+    def generate(self) -> Iterator[Dict[int, List[Modification]]]:
+        """
+        Generate all possible modification combinations.
+
+        Yields
+        ------
+        Dict[int, List[Modification]]
+            Dictionary mapping positions to lists of modifications for each scenario.
+        """
+        if not self.variable_mods:
+            # If only static mods, yield the single scenario if not already used
+            serialized = ordered_serialize_position_dict(self.static_mod_position_dict)
+            if serialized not in self.used_scenarios_set:
+                self.used_scenarios_set.add(serialized)
                 yield self.static_mod_position_dict
+            return
 
-    def static_mod_generate(self):
+        # Generate all variable mod scenarios
+        self._generate_variable_mod_scenarios()
+
+        # Explore all combinations
+        for variable_scenario in self._explore_scenarios():
+            # Combine static and variable modifications
+            combined_scenario = dict(self.static_mod_position_dict)
+
+            # Update with variable modifications
+            for pos, mods in variable_scenario.items():
+                if pos in combined_scenario:
+                    combined_scenario[pos].extend(mods)
+                else:
+                    combined_scenario[pos] = mods
+
+            # Serialize to check for duplicates
+            serialized = ordered_serialize_position_dict(combined_scenario)
+            if serialized not in self.used_scenarios_set:
+                self.used_scenarios_set.add(serialized)
+                yield combined_scenario
+
+    def _generate_static_mod_positions(self) -> Dict[int, List[Modification]]:
         """
-        Generate positions for static modifications.
+        Generate dictionary of positions for static modifications.
 
-        This method creates a dictionary of positions for static modifications in the sequence.
-
-        :return: dict
-          A dictionary where keys are positions and values are lists of static modifications at those positions.
+        Returns
+        -------
+        Dict[int, List[Modification]]
+            Dictionary mapping positions to lists of static modifications.
         """
-        position_dict = {}
+        position_dict = defaultdict(list)
 
-        for m in self.static_mods:
+        for mod in self.static_mods:
+            positions = self.static_map.get_mod_positions(str(mod))
+            if positions:
+                for position in positions:
+                    position_dict[position].append(mod)
 
-            for pm in self.static_map.get_mod_positions(str(m)):
-                if pm not in position_dict:
-                    position_dict[pm] = []
-                position_dict[pm].append(m)
-        return position_dict
+        return dict(position_dict)
 
-    def variable_mod_generate_scenarios(self):
+    def _generate_variable_mod_scenarios(self) -> None:
         """
         Generate all possible position combinations for variable modifications.
 
-        This method populates the `variable_map_scenarios` dictionary with all possible position combinations for each variable modification.
+        Populates self.variable_map_scenarios with possible position combinations
+        for each variable modification.
         """
-        for i in self.variable_mods:
-            positions = self.variable_map.get_mod_positions(str(i))
-            if i.value not in self.variable_map_scenarios:
-                if not i.all_fill:
-                    self.variable_map_scenarios[i.value] = list(
-                        variable_position_placement_generator(positions))
-                else:
-                    self.variable_map_scenarios[i.value] = [[], positions]
+        self.variable_map_scenarios = {}
 
+        for mod in self.variable_mods:
+            positions = self.variable_map.get_mod_positions(str(mod)) or []
 
-    def explore_scenarios(self, current_mod=0, mod=None):
-        """
-        Recursively explore all modification scenarios.
-
-        This method recursively generates all possible modification scenarios by exploring different combinations of variable modifications.
-
-        :param current_mod: int, optional
-            The current modification index being explored (default is 0).
-        :param mod: dict, optional
-            The current modification scenario being built (default is None).
-
-        :yield: dict
-            A dictionary representing a modification scenario.
-        """
-        if mod is None:
-            mod = {}
-        for pos in self.variable_map_scenarios[self.variable_mods[current_mod].value]:
-            temp_dict = deepcopy(mod)
-            if pos:
-                for p in pos:
-                    if p not in temp_dict:
-                        temp_dict[p] = [self.variable_mods[current_mod]]
-                    if current_mod != self.variable_mod_number - 1:
-                        yield from self.explore_scenarios(current_mod + 1, temp_dict)
-                    else:
-                        yield temp_dict
+            if not mod.all_filled:
+                # Generate all possible subsets of positions
+                self.variable_map_scenarios[mod.value] = list(
+                    variable_position_placement_generator(positions)
+                )
             else:
-                if current_mod != self.variable_mod_number - 1:
-                    yield from self.explore_scenarios(current_mod + 1, temp_dict)
-                else:
-                    yield temp_dict
+                # For all_filled mods, only empty list or all positions are valid
+                self.variable_map_scenarios[mod.value] = [[], positions]
+
+    def _explore_scenarios(
+            self,
+            current_mod_idx: int = 0,
+            current_scenario: Optional[Dict[int, List[Modification]]] = None
+    ) -> Iterator[Dict[int, List[Modification]]]:
+        """
+        Recursively explore all possible modification scenarios.
+
+        Parameters
+        ----------
+        current_mod_idx : int, optional
+            Index of the current modification being processed.
+        current_scenario : Dict[int, List[Modification]], optional
+            Current scenario being built.
+
+        Yields
+        ------
+        Dict[int, List[Modification]]
+            Each possible scenario of variable modifications.
+        """
+        if current_scenario is None:
+            current_scenario = {}
+
+        # Base case: processed all modifications
+        if current_mod_idx >= len(self.variable_mods):
+            yield current_scenario
+            return
+
+        current_mod = self.variable_mods[current_mod_idx]
+        position_combinations = self.variable_map_scenarios.get(current_mod.value, [[]])
+
+        for positions in position_combinations:
+            # Create a copy of the current scenario
+            scenario_copy = deepcopy(current_scenario)
+
+            # Add current modification to positions
+            for pos in positions:
+                if pos not in scenario_copy:
+                    scenario_copy[pos] = []
+                scenario_copy[pos].append(current_mod)
+
+            # Recursively continue with next modification
+            yield from self._explore_scenarios(current_mod_idx + 1, scenario_copy)
 
 

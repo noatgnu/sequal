@@ -23,7 +23,8 @@ AA_mass = {"A": 71.037114,
            "U": 150.95363,
            "W": 186.079313,
            "Y": 163.06332,
-           "V": 99.068414}
+           "V": 99.068414,
+           "X": None}
 
 glycan_block_dict = {"HexNAc": 203.079372520,
           "Hex": 162.0528234185,
@@ -33,3 +34,7 @@ glycan_block_dict = {"HexNAc": 203.079372520,
           "Phospho": 79.9663305228,
           "Pent": 132.0422587348,
           "NeuGc": 307.0903311261}
+monosaccharides = {
+            "Hex", "HexNAc", "HexS", "HexP", "HexNAcS",
+            "dHex", "NeuAc", "NeuGc", "Pen", "Fuc"
+        }
