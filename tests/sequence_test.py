@@ -98,11 +98,11 @@ class TestProForma(unittest.TestCase):
 
         # Check sequence and modification
         assert seq.to_stripped_string() == "PEPTIDE"
-        assert seq[2].mods[0].value == "Mass:+79.966"
+        assert seq[2].mods[0].value == "+79.966"
         assert abs(seq[2].mods[0].mass - 79.966) < 0.0001
 
         # Check roundtrip (note: may not be identical due to internal representation)
-        assert seq.to_proforma() == "PEP[Mass:+79.966]TIDE"
+        assert seq.to_proforma() == "PEP[+79.966]TIDE"
 
     def test_multiple_modifications(self):
         """Test multiple modifications on a single residue."""
@@ -182,7 +182,7 @@ class TestProForma(unittest.TestCase):
         seq = Sequence.from_proforma(proforma)
 
         assert seq.to_stripped_string() == "PEPTIDE"
-        assert seq[2].mods[0].value == "Mass:-17.027"
+        assert seq[2].mods[0].value == "-17.027"
         assert abs(seq[2].mods[0].mass + 17.027) < 0.0001
 
     def test_conversion_from_sequence_to_proforma(self):
@@ -396,6 +396,519 @@ class TestProForma(unittest.TestCase):
 
             # Verify roundtrip conversion
             assert seq.to_proforma() == proforma
+
+    def test_valid_labile_modifications(self):
+        # Test single labile modification
+        proforma_str = "{Glycan:Hex}EMEVNESPEK"
+        seq = Sequence.from_proforma(proforma_str)
+        assert seq.to_stripped_string() == "EMEVNESPEK"
+        assert len(seq.mods[-3]) == 1
+        assert seq.mods[-3][0].value == "Hex"
+        assert seq.mods[-3][0].source == "Glycan"
+        assert seq.to_proforma() == proforma_str
+        # Test multiple labile modifications
+        proforma_str = "{Glycan:Hex}{Glycan:NeuAc}EMEVNESPEK"
+        seq = Sequence.from_proforma(proforma_str)
+        assert seq.to_stripped_string() == "EMEVNESPEK"
+        assert len(seq.mods[-3]) == 2
+        assert seq.mods[-3][0].value == "Hex"
+        assert seq.mods[-3][1].value == "NeuAc"
+        assert seq.to_proforma() == proforma_str
+
+    def test_unknown_position_modifications(self):
+        # Single unknown position
+        seq = Sequence.from_proforma("[Phospho]?EMEVNESPEK")
+        assert seq.to_stripped_string() == "EMEVNESPEK"
+        assert len(seq.mods[-4]) == 1
+        assert seq.mods[-4][0].value == "Phospho"
+        # Test roundtrip conversion
+        assert seq.to_proforma() == "[Phospho]?EMEVNESPEK"
+
+        # Multiple unknown positions with individual listing
+        seq = Sequence.from_proforma("[Phospho][Phospho]?EMEVNESPEK")
+        assert seq.to_stripped_string() == "EMEVNESPEK"
+        assert len(seq.mods[-4]) == 2
+        assert all(mod.value == "Phospho" for mod in seq.mods[-4])
+        # Test roundtrip conversion
+        assert seq.to_proforma() == "[Phospho]^2?EMEVNESPEK"
+
+        # Multiple unknown positions with caret notation
+        seq = Sequence.from_proforma("[Phospho]^2?EMEVNESPEK")
+        assert seq.to_stripped_string() == "EMEVNESPEK"
+        assert len(seq.mods[-4]) == 2
+        assert all(mod.value == "Phospho" for mod in seq.mods[-4])
+        # Test roundtrip conversion
+        assert seq.to_proforma() == "[Phospho]^2?EMEVNESPEK"
+
+        # With N-terminal modification
+        seq = Sequence.from_proforma("[Phospho]^2?[Acetyl]-EMEVNESPEK")
+        assert len(seq.mods[-4]) == 2
+        assert seq.mods[-1][0].value == "Acetyl"
+        # Test roundtrip conversion
+        assert seq.to_proforma() == "[Phospho]^2?[Acetyl]-EMEVNESPEK"
+
+    def test_ambiguity_groups(self):
+        """Test ambiguity groups for modifications with multiple possible sites."""
+        # Test with a simple ambiguity group
+        proforma = "EM[Oxidation]EVT[#g1]S[#g1]ES[Phospho#g1]PEK"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check sequence
+        assert seq.to_stripped_string() == "EMEVTSESPEK"
+
+        # Check modifications
+        assert seq.seq[1].mods[0].value == "Oxidation"  # Regular mod
+
+        # Check ambiguity group
+        assert seq.seq[4].mods[0].is_ambiguity_ref  # T position
+        assert seq.seq[4].mods[0].ambiguity_group == "g1"
+
+        assert seq.seq[5].mods[0].is_ambiguity_ref  # First S position
+        assert seq.seq[5].mods[0].ambiguity_group == "g1"
+
+        assert seq.seq[7].mods[0].value == "Phospho"  # Preferred S position
+        assert seq.seq[7].mods[0].ambiguity_group == "g1"
+        assert not seq.seq[7].mods[0].is_ambiguity_ref
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+        # Test with multiple ambiguity groups
+        proforma2 = "EM[Oxidation#g1]E[#g1]VTS[Phospho#g2]ES[#g2]PEK"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        # Check roundtrip with multiple groups
+        assert seq2.to_proforma() == proforma2
+
+    def test_range_modifications(self):
+        """Test range notation for modifications with multiple possible sites."""
+        # Simple range
+        proforma = "PRT(ESFRMS)[+19.0523]ISK"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check sequence
+        assert seq.to_stripped_string() == "PRTESFRMSISK"
+
+        # Check modification is applied to range
+        for i in range(3, 9):  # Positions 3-8 (ESFRMS)
+            assert any(
+                mod.in_range and mod.value == "+19.0523" for mod in seq.seq[i].mods
+            )
+
+        # Check roundtrip conversion
+        assert seq.to_proforma() == proforma
+
+        # Range containing modification
+        proforma2 = "PRT(EC[Carbamidomethyl]FRMS)[+19.0523]ISK"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        # Check both modifications
+        assert any(mod.value == "Carbamidomethyl" for mod in seq2.seq[4].mods)
+        for i in range(3, 9):
+            assert any(
+                mod.in_range and mod.value == "+19.0523" for mod in seq2.seq[i].mods
+            )
+
+        # Check roundtrip
+        assert seq2.to_proforma() == proforma2
+
+    def test_localization_scores(self):
+        """Test ambiguity groups with localization scores."""
+        # Basic example from the spec
+        proforma = "EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho#g1(0.90)]PEK"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check localization scores
+        assert seq.seq[4].mods[0].localization_score == 0.01  # T position
+        assert seq.seq[5].mods[0].localization_score == 0.09  # S position
+        assert seq.seq[7].mods[0].localization_score == 0.90  # Preferred S position
+
+        # Check roundtrip conversion preserves scores
+        assert seq.to_proforma() == proforma
+
+        # Test unknown position with scores example from the spec
+        proforma2 = (
+            "[Phospho#s1]?EM[Oxidation]EVT[#s1(0.01)]S[#s1(0.09)]ES[#s1(0.90)]PEK"
+        )
+        seq2 = Sequence.from_proforma(proforma2)
+
+        # Check unknown position modification
+        assert len(seq2.mods[-4]) == 1
+        assert seq2.mods[-4][0].value == "Phospho"
+        assert seq2.mods[-4][0].ambiguity_group == "s1"
+
+        # Check all localization scores
+        assert seq2.seq[4].mods[0].localization_score == 0.01
+        assert seq2.seq[5].mods[0].localization_score == 0.09
+        assert seq2.seq[7].mods[0].localization_score == 0.90
+
+        # Check roundtrip
+        assert seq2.to_proforma() == proforma2
+
+    def test_range_with_localization_scores(self):
+        """Test localization scores with range notation."""
+        # Example 1: Range with ambiguity group and score
+        proforma = "PRT(ESFRMS)[+19.0523#g1(0.01)]ISK[#g1(0.99)]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Verify range modification
+        range_start = 3
+        range_end = 8
+        for i in range(range_start, range_end + 1):
+            mods = seq.seq[i].mods
+            assert len(mods) == 1
+            assert mods[0].value == "+19.0523"
+            assert mods[0].ambiguity_group == "g1"
+            assert mods[0].localization_score == 0.01
+            assert mods[0].in_range == True
+
+        # Check last position with reference to the same ambiguity group
+        assert seq.seq[11].mods[0].is_ambiguity_ref == True
+        assert seq.seq[11].mods[0].ambiguity_group == "g1"
+        assert seq.seq[11].mods[0].localization_score == 0.99
+
+        # Test roundtrip
+        assert seq.to_proforma() == "PRT(ESFRMS)[+19.0523#g1(0.01)]ISK[#g1(0.99)]"
+
+        # Example 2: More complex case
+        proforma2 = "PR[#g1(0.91)]T(EC[Carbamidomethyl]FRMS)[+19.0523#g1(0.09)]ISK"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        # Check individual position outside range
+        assert seq2.seq[1].mods[0].is_ambiguity_ref == True
+        assert seq2.seq[1].mods[0].ambiguity_group == "g1"
+        assert seq2.seq[1].mods[0].localization_score == 0.91
+
+        # Check nested modification inside range
+        assert seq2.seq[4].mods[0].value == "Carbamidomethyl"
+
+        # Check range modification with score
+        for i in range(3, 9):
+            if i != 4:  # Skip position with Carbamidomethyl which is handled separately
+                mods = [m for m in seq2.seq[i].mods if m.in_range]
+                assert len(mods) > 0
+                assert mods[0].value == "+19.0523"
+                assert mods[0].ambiguity_group == "g1"
+                assert mods[0].localization_score == 0.09
+
+        # Test roundtrip
+        assert (
+            seq2.to_proforma()
+            == "PR[#g1(0.91)]T(EC[Carbamidomethyl]FRMS)[+19.0523#g1(0.09)]ISK"
+        )
+
+    def test_multiple_modifications_same_residue(self):
+        """Test multiple modifications on the same amino acid or range."""
+        # Example from the spec with multiple mods on a range
+        proforma = "MPGLVDSNPAPPESQEKKPLK(PCCACPETKKARDACIIEKGEEHCGHLIEAHKECMRALGFKI)[Oxidation][Oxidation][half cystine][half cystine]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Verify sequence structure
+        assert (
+            seq.to_stripped_string()
+            == "MPGLVDSNPAPPESQEKKPLKPCCACPETKKARDACIIEKGEEHCGHLIEAHKECMRALGFKI"
+        )
+
+        # Check that all four modifications are applied to the range
+        range_start = 22
+        range_end = 62
+
+        # Test that all positions in the range have the four modifications
+        for i in range(range_start, range_end + 1):
+            assert len(seq.seq[i].mods) == 4
+
+            # Check each modification type
+            mod_values = [mod.value for mod in seq.seq[i].mods]
+            assert mod_values.count("Oxidation") == 2
+            assert mod_values.count("half cystine") == 2
+
+        # Test a simpler case with multiple modifications on a single residue
+        proforma2 = "PEPTIDEK[Acetyl][Methyl]"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        # Check modifications on K
+        mods = seq2.seq[7].mods
+        assert len(mods) == 2
+        assert "Acetyl" in [m.value for m in mods]
+        assert "Methyl" in [m.value for m in mods]
+
+        # Verify roundtrip
+        assert seq2.to_proforma() == "PEPTIDEK[Acetyl][Methyl]"
+
+    def test_global_modifications(self):
+        """Test global modifications in ProForma format (section 4.6)."""
+        # Test Case 1: Isotope labeling
+        isotope_tests = [
+            ("<13C>ATPEILTVNSIGQLK", "13C", None),
+            ("<15N>ATPEILTVNSIGQLK", "15N", None),
+            ("<D>ATPEILTVNSIGQLK", "D", None),
+            ("<13C><15N>ATPEILTVNSIGQLK", ["13C", "15N"], None),
+        ]
+
+        for proforma, expected_value, _ in isotope_tests:
+            seq = Sequence.from_proforma(proforma)
+
+            # Check base sequence
+            assert seq.to_stripped_string() == "ATPEILTVNSIGQLK"
+
+            # Check global mods
+            if isinstance(expected_value, list):
+                assert len(seq.global_mods) == len(expected_value)
+                for i, mod in enumerate(seq.global_mods):
+                    assert mod.value == expected_value[i]
+                    assert mod.global_mod_type == "isotope"
+                    assert mod.target_residues is None
+            else:
+                assert len(seq.global_mods) == 1
+                assert seq.global_mods[0].value == expected_value
+                assert seq.global_mods[0].global_mod_type == "isotope"
+                assert seq.global_mods[0].target_residues is None
+
+            # Test roundtrip
+            assert seq.to_proforma() == proforma
+
+        # Test Case 2: Fixed protein modifications with target residues
+        fixed_mod_tests = [
+            (
+                "<[S-carboxamidomethyl-L-cysteine]@C>ATPEILTCNSIGCLK",
+                "S-carboxamidomethyl-L-cysteine",
+                ["C"],
+            ),
+            ("<[MOD:01090]@C>ATPEILTCNSIGCLK", "01090", ["C"]),
+            ("<[Oxidation]@C,M>MTPEILTCNSIGCLK", "Oxidation", ["C", "M"]),
+        ]
+
+        for proforma, expected_value, expected_targets in fixed_mod_tests:
+            seq = Sequence.from_proforma(proforma)
+
+            # Check base sequence
+            assert seq.to_stripped_string() == proforma.split(">")[1]
+
+            # Check global mod
+            assert len(seq.global_mods) == 1
+            assert seq.global_mods[0].value == expected_value
+            assert seq.global_mods[0].global_mod_type == "fixed"
+            assert seq.global_mods[0].target_residues == expected_targets
+
+            # Test roundtrip
+            assert seq.to_proforma() == proforma
+
+        # Test Case 3: Combined with other modifications
+        combined_tests = [
+            ("<[MOD:01090]@C>[Phospho]?EM[Oxidation]EVTSECSPEK"),
+            ("<[MOD:01090]@C>[Acetyl]-EM[Oxidation]EVTSECSPEK"),
+        ]
+
+        for proforma in combined_tests:
+            seq = Sequence.from_proforma(proforma)
+
+            # Check global mod exists
+            assert len(seq.global_mods) == 1
+            assert seq.global_mods[0].source == "MOD"
+            assert seq.global_mods[0].value == "01090"
+            assert seq.global_mods[0].target_residues == ["C"]
+
+            # Check other modifications
+            if "?" in proforma:
+                # Should have an ambiguous modification
+                assert len(seq.mods.get(-4, [])) > 0
+                assert any(mod.value == "Phospho" for mod in seq.mods.get(-4, []))
+            elif "-" in proforma:
+                # Should have an N-terminal modification
+                assert len(seq.mods.get(-1, [])) > 0
+                assert any(mod.value == "Acetyl" for mod in seq.mods.get(-1, []))
+
+            # Check residue modification
+            m_pos = 1  # Position of M in the sequence
+            assert any(mod.value == "Oxidation" for mod in seq.seq[m_pos].mods)
+
+            # Test roundtrip
+            assert seq.to_proforma() == proforma
+
+    def test_sequence_ambiguity(self):
+        """Test representation of amino acid sequence ambiguity."""
+        # Test simple ambiguity
+        proforma = "(?DQ)NGTWEM[Oxidation]ESNENFEGYM[Oxidation]K"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check sequence
+        assert seq.to_stripped_string() == "NGTWEMESNENFEGYMK"
+
+        # Check ambiguity
+        assert len(seq.sequence_ambiguities) == 1
+        assert seq.sequence_ambiguities[0].value == "DQ"
+        assert seq.sequence_ambiguities[0].position == 0
+
+        # Check modifications are still parsed correctly
+        assert seq.seq[5].mods[0].value == "Oxidation"  # M position
+        assert seq.seq[15].mods[0].value == "Oxidation"  # M position
+
+        # Test roundtrip
+        assert seq.to_proforma() == proforma
+
+        # Test another example
+        proforma2 = "(?N)NGTWEM[Oxidation]ESNENFEGYM[Oxidation]K"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        assert seq2.sequence_ambiguities[0].value == "N"
+        assert seq2.to_proforma() == proforma2
+
+    def test_info_tags(self):
+        """Test INFO tag support."""
+        # Simple info tag
+        proforma = "ELVIS[Phospho|INFO:newly discovered]K"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check the modification has an info tag
+        assert len(seq.seq[4].mods) == 1
+        mod = seq.seq[4].mods[0]
+        assert mod.value == "Phospho"
+        print(mod.mod_value)
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:newly discovered"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+        # Multiple info tags
+        proforma2 = "ELVIS[Phospho|INFO:newly discovered|INFO:Created on 2021-06]K"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        mod2 = seq2.seq[4].mods[0]
+        assert len(mod2.info_tags) == 2
+        assert mod2.info_tags[0] == "INFO:newly discovered"
+        assert mod2.info_tags[1] == "INFO:Created on 2021-06"
+
+        # Check roundtrip
+        assert seq2.to_proforma() == proforma2
+
+    def test_info_tags_with_terminal_and_global_mods(self):
+        """Test INFO tag support with terminal and global modifications."""
+        # INFO tag with N-terminal modification
+        proforma = "[Acetyl|INFO:Added during processing]-PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check N-terminal modification has info tag
+        assert len(seq.mods[-1]) == 1  # N-terminal is position -1
+        mod = seq.mods[-1][0]
+        assert mod.value == "Acetyl"
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Added during processing"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+        # INFO tag with C-terminal modification
+        proforma = "PEPTIDE-[Amidated|INFO:Common C-terminal mod]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check C-terminal modification has info tag
+        assert len(seq.mods[-2]) == 1  # C-terminal is position -2
+        mod = seq.mods[-2][0]
+        assert mod.value == "Amidated"
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Common C-terminal mod"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+        # INFO tag with global isotope modification
+        proforma = "<13C|INFO:Stable isotope labeling>PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check global modification has info tag
+        assert len(seq.global_mods) == 1
+        mod = seq.global_mods[0]
+        assert mod.value == "13C"
+        assert mod.global_mod_type == "isotope"
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Stable isotope labeling"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+        # INFO tag with global fixed modification
+        proforma = "<[Carbamidomethyl|INFO:Standard alkylation]@C>PEPTCDE"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check global fixed modification has info tag
+        assert len(seq.global_mods) == 1
+        mod = seq.global_mods[0]
+        assert mod.value == "Carbamidomethyl"
+        assert mod.global_mod_type == "fixed"
+        assert mod.target_residues == ["C"]
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Standard alkylation"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+        # Complex case with multiple INFO tags and modifications
+        proforma = "<[Carbamidomethyl|INFO:Standard alkylation]@C>[Acetyl|INFO:Added during processing]-PEPTCDE-[Amidated|INFO:Common C-terminal mod]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check all modifications have their respective info tags
+        # Global mod
+        assert len(seq.global_mods) == 1
+        mod = seq.global_mods[0]
+        assert mod.value == "Carbamidomethyl"
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Standard alkylation"
+
+        # N-terminal mod
+        assert len(seq.mods[-1]) == 1
+        mod = seq.mods[-1][0]
+        assert mod.value == "Acetyl"
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Added during processing"
+
+        # C-terminal mod
+        assert len(seq.mods[-2]) == 1
+        mod = seq.mods[-2][0]
+        assert mod.value == "Amidated"
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Common C-terminal mod"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
+
+    def test_joint_representation(self):
+        """Test joint representation of experimental data and interpretation."""
+        # Basic case with interpretation and mass
+        proforma = "ELVIS[U:Phospho|+79.966331]K"
+        seq = Sequence.from_proforma(proforma)
+        mod = seq.seq[4].mods[0]
+        assert mod.value == "Phospho"
+        assert mod.source == "U"
+        assert mod.mass == 79.966331
+        assert seq.to_proforma() == proforma
+
+        proforma = "ELVIS[+79.966331]K"
+        seq = Sequence.from_proforma(proforma)
+        assert seq.to_proforma() == proforma
+
+        # Case with observed mass
+        proforma = "ELVIS[U:Phospho|Obs:+79.978]K"
+        seq = Sequence.from_proforma(proforma)
+        mod = seq.seq[4].mods[0]
+        assert mod.value == "Phospho"
+        assert mod.source == "U"
+        assert mod.observed_mass == 79.978
+        assert seq.to_proforma() == proforma
+
+        # Complex case with multiple synonyms
+        proforma = "ELVIS[Phospho|O-phospho-L-serine|Obs:+79.966|INFO:Validated]K"
+        seq = Sequence.from_proforma(proforma)
+        mod = seq.seq[4].mods[0]
+        assert mod.value == "Phospho"
+        assert len(mod.synonyms) == 1
+        assert mod.synonyms[0] == "O-phospho-L-serine"
+        assert mod.observed_mass == 79.966
+        assert len(mod.info_tags) == 1
+        assert mod.info_tags[0] == "INFO:Validated"
+
+        # Check roundtrip
+        assert seq.to_proforma() == proforma
 
 
 if __name__ == "__main__":

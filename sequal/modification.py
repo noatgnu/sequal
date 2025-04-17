@@ -68,6 +68,13 @@ class Modification(BaseBlock):
         is_crosslink_ref: bool = False,
         is_branch_ref: bool = False,
         is_branch: bool = False,
+        ambiguity_group: Optional[str] = None,
+        is_ambiguity_ref: bool = False,
+        in_range: bool = False,
+        range_start: Optional[int] = None,
+        range_end: Optional[int] = None,
+        localization_score: Optional[float] = None,
+        mod_value: Optional["ModificationValue"] = None,
     ):
         self._source = None
         self._original_value = value
@@ -75,13 +82,22 @@ class Modification(BaseBlock):
         self._is_crosslink_ref = is_crosslink_ref
         self._is_branch_ref = is_branch_ref
         self._is_branch = is_branch
+        self.is_ambiguity_ref = is_ambiguity_ref
+        self.ambiguity_group = ambiguity_group
+        self.in_range = in_range
+        self.range_start = range_start
+        self.range_end = range_end
+        self.localization_score = localization_score
+        self._mod_value = mod_value or ModificationValue(value, mass=mass)
 
         if ":" in value:
             parts = value.split(":", 1)
             if parts[0] in self.KNOWN_SOURCES:
                 self._source = parts[0]
                 value = parts[1]
-                if "#" in value:
+                if "#" in value and not (
+                    self.ambiguity_group and self.is_ambiguity_ref
+                ):
                     value_parts = value.split("#", 1)
                     value = value_parts[0]
                     self._crosslink_id = value_parts[1]
@@ -106,7 +122,11 @@ class Modification(BaseBlock):
             "crosslink",
             "branch",
             "gap",
+            "labile",
+            "unknown_position",
+            "global",
         }
+
         if (crosslink_id or is_crosslink_ref) and mod_type not in {"crosslink"}:
             mod_type = "crosslink"
         if mod_type not in valid_mod_types:
@@ -121,6 +141,30 @@ class Modification(BaseBlock):
         self._labile_number = labile_number
         self._full_name = full_name
         self._all_filled = all_filled
+        if mod_type == "labile":
+            self._labile = True
+        if self.in_range:
+            self._mod_type = "ambiguous"
+
+    @property
+    def value(self):
+        """Get the modification value."""
+        return self._mod_value.primary_value if self._mod_value else self._value
+
+    @property
+    def mass(self):
+        """Get the mass of the modification."""
+        return self._mod_value.mass
+
+    @property
+    def observed_mass(self):
+        """Get the observed mass of the modification."""
+        return self._mod_value.observed_mass
+
+    @property
+    def synonyms(self):
+        """Get the synonyms of the modification."""
+        return self._mod_value.synonyms
 
     @staticmethod
     def _validate_formula(formula: str) -> bool:
@@ -222,6 +266,17 @@ class Modification(BaseBlock):
             i += len(match.group(0))
 
         return i == len(glycan_clean)  # Ensure we consumed the entire string
+
+    @property
+    def mod_value(self) -> Optional["ModificationValue"]:
+        """Get the modification value object."""
+        return self._mod_value
+
+    @property
+    def info_tags(self) -> List[str]:
+        """Get the list of information tags associated with the modification."""
+
+        return self._mod_value.info_tags
 
     @property
     def crosslink_id(self) -> Optional[str]:
@@ -364,12 +419,7 @@ class Modification(BaseBlock):
 
     def __repr__(self) -> str:
         """Return a detailed string representation for debugging."""
-        return (
-            f"Modification(value='{self.value}', position={self.position}, "
-            f"mod_type='{self._mod_type}', labile={self._labile}, "
-            f"crosslink_id={self._crosslink_id!r}, is_crosslink_ref={self._is_crosslink_ref}, "
-            f"is_branch={self._is_branch}, is_branch_ref={self._is_branch_ref})"
-        )
+        return f"Modification(value='{self.value}', position={self.position},mod_type='{self._mod_type}', labile={self._labile}, crosslink_id={self._crosslink_id!r}, is_crosslink_ref={self._is_crosslink_ref}, is_branch={self._is_branch}, is_branch_ref={self._is_branch_ref})"
 
 
 class ModificationMap:
@@ -533,3 +583,223 @@ class ModificationMap:
                 if positions
             },
         }
+
+
+class GlobalModification(Modification):
+    """Represents a global modification that applies to specified residues."""
+
+    def __init__(
+        self,
+        value: str,
+        target_residues: Optional[List[str]] = None,
+        mod_type: str = "isotope",
+    ):
+        """Initialize a global modification.
+
+        Parameters
+        ----------
+        value : str
+            The modification value (name, accession, or formula)
+        target_residues : List[str], optional
+            For fixed modifications, the target residue types (e.g., ["C", "M"])
+        mod_type : str
+            Type of global modification: "isotope" or "fixed"
+        """
+        if mod_type not in ["isotope", "fixed"]:
+            raise ValueError("Global modification type must be 'isotope' or 'fixed'")
+
+        # Initialize base Modification class
+        # This will handle source parsing (MOD:, Unimod:, etc.)
+        super().__init__(
+            value=value,
+            position=None,
+            mod_type="global",  # Use a specific mod_type to identify global mods
+        )
+        mod_value = ModificationValue(value)
+        self._mod_value = mod_value
+
+        # Global mod specific attributes
+        self.target_residues = target_residues
+        self.global_mod_type = mod_type
+
+    def to_proforma(self) -> str:
+        """Convert to ProForma notation."""
+        if self.global_mod_type == "isotope":
+            if self.info_tags:
+                info_tags_str = "|".join(self.info_tags)
+                return f"<{self.value}|{info_tags_str}>"
+            return f"<{self.value}>"
+        else:
+            # For fixed modifications with target residues
+            mod_value = self.value
+
+            # If the source is present in the original value, preserve it
+            if self.source:
+                mod_value = f"{self.source}:{mod_value}"
+            if self.info_tags:
+                info_tags_str = "|".join(self.info_tags)
+                mod_value = f"{mod_value}|{info_tags_str}"
+            # Format with brackets if not already present
+            if not mod_value.startswith("["):
+                mod_str = f"[{mod_value}]"
+            else:
+                mod_str = mod_value
+            # Join target residues with commas
+            targets = ",".join(self.target_residues)
+            return f"<{mod_str}@{targets}>"
+
+    def __repr__(self) -> str:
+        """Return a detailed string representation for debugging."""
+        base = f"GlobalModification(value='{self.value}'"
+        if self.source:
+            base += f", source='{self.source}'"
+        if self.target_residues:
+            base += f", target_residues={self.target_residues}"
+        base += f", mod_type='{self.global_mod_type}')"
+        return base
+
+
+class ModificationValue:
+    """
+    Represents the value of a modification with support for multiple representations.
+
+    Encapsulates different ways to represent the same modification:
+    - Primary identifier (name/accession)
+    - Source database (Unimod, PSI-MOD, etc.)
+    - Synonymous terms
+    - Observed mass values
+    - Information tags
+    """
+
+    KNOWN_SOURCES = {
+        "Unimod",
+        "U",
+        "PSI-MOD",
+        "M",
+        "RESID",
+        "R",
+        "XL-MOD",
+        "X",
+        "XLMOD",
+        "GNO",
+        "G",
+        "MOD",
+        "Obs",
+        "Formula",
+        "Glycan",
+        "Info",
+        "OBS",
+        "INFO",
+    }
+
+    def __init__(self, value: str, mass: Optional[float] = None):
+        self._primary_value = ""
+        self._source = None
+        self._original_value = value
+        self._mass = mass
+        self._synonyms = []
+        self._observed_mass = None
+        self._info_tags = []
+
+        # Parse the input value
+        self._parse_value(value)
+
+    def _parse_value(self, value: str):
+        """Parse modification value, extracting source, synonyms, and tags."""
+
+        if "|" in value:
+            components = value.split("|")
+            self._primary_value = components[0]
+            if "#" in self._primary_value:
+                splitted_primary = self._primary_value.split("#")
+                self._primary_value = splitted_primary[0]
+                self._crosslink_id = splitted_primary[1]
+
+            if ":" in components[0]:
+                parts = components[0].split(":", 1)
+                if parts[0] in self.KNOWN_SOURCES:
+                    self._source = parts[0]
+                elif parts[0].upper() == "MASS":
+                    self._mass = float(parts[1])
+                self._primary_value = parts[1]
+
+            for component in components[1:]:
+                if ":" in component:
+                    parts = component.split(":", 1)
+
+                    if parts[0] in self.KNOWN_SOURCES:
+                        value = parts[1]
+                        if parts[0].upper().startswith("INFO"):
+                            self._info_tags.append(component)
+                        elif parts[0].upper().startswith("OBS"):
+                            self._observed_mass = float(component.split(":")[1])
+                    elif parts[0].upper() == "MASS":
+                        self._mass = float(parts[1])
+
+                else:
+                    if component.startswith("+") or component.startswith("-"):
+                        self._mass = float(component)
+                    else:
+                        self._synonyms.append(component)
+        else:
+            self._primary_value = value
+            if "#" in self._primary_value:
+                splitted_primary = self._primary_value.split("#")
+                self._primary_value = splitted_primary[0]
+                self._crosslink_id = splitted_primary[1]
+            if ":" in self._primary_value:
+                parts = self._primary_value.split(":", 1)
+                if parts[0] in self.KNOWN_SOURCES:
+                    self._source = parts[0]
+                    self._primary_value = parts[1]
+                elif parts[0].upper() == "MASS":
+                    self._mass = float(parts[1])
+
+    @property
+    def source(self) -> Optional[str]:
+        return self._source
+
+    @property
+    def primary_value(self) -> str:
+        return self._primary_value
+
+    @property
+    def mass(self) -> Optional[float]:
+        return self._mass
+
+    @property
+    def synonyms(self) -> List[str]:
+        return self._synonyms
+
+    @property
+    def observed_mass(self) -> Optional[str]:
+        return self._observed_mass
+
+    @property
+    def info_tags(self) -> List[str]:
+        return self._info_tags
+
+    def to_string(self, include_source: bool = True) -> str:
+        """Convert to string representation for ProForma output."""
+        parts = []
+
+        # Start with primary value and source
+        if include_source and self._source:
+            parts.append(f"{self._source}:{self._primary_value}")
+        else:
+            parts.append(self._primary_value)
+
+        # Add synonyms
+        parts.extend(self._synonyms)
+
+        # Add observed mass if present
+        if self._observed_mass:
+            parts.append(f"Obs:{self._observed_mass}")
+
+        # Add info tags
+        parts.extend(self._info_tags)
+
+        return "|".join(parts)
+
+    def __str__(self) -> str:
+        return self.to_string()
