@@ -18,9 +18,100 @@ pip install sequal
 
 ## Usage
 
+### ProForma 2.0 Support
+
+Sequal supports the [ProForma 2.0 standard](https://www.psidev.info/proforma) for proteoform notation, which provides a standardized way to represent protein sequences with their modifications.
+
+#### Parsing ProForma notation
+
+```python
+from sequal.sequence import Sequence
+
+# Basic ProForma notation with modification
+seq = Sequence.from_proforma("ELVIS[Phospho]K")
+print(seq.seq[4].value)  # S
+print(seq.seq[4].mods[0].value)  # Phospho
+
+# ProForma with terminal modifications
+seq = Sequence.from_proforma("[Acetyl]-PEPTIDE-[Amidated]")
+print(seq.mods[-1][0].value)  # Acetyl (N-terminal)
+print(seq.mods[-2][0].value)  # Amidated (C-terminal)
+
+# ProForma with global modifications
+seq = Sequence.from_proforma("<[Carbamidomethyl]@C>PEPTCDE")
+print(seq.global_mods[0].value)  # Carbamidomethyl
+print(seq.global_mods[0].target_residues)  # ['C']
+
+# ProForma with sequence ambiguity
+seq = Sequence.from_proforma("PEPT(?DE|ID)E")
+print(seq.sequence_ambiguities[0].sequence)  # DE|ID
+print(seq.sequence_ambiguities[0].position)  # 4
+```
+
+#### Working with information tags
+
+```python 
+from sequal.sequence import Sequence
+
+# ProForma with info tags
+seq = Sequence.from_proforma("ELVIS[Phospho|INFO:newly discovered]K")
+mod = seq.seq[4].mods[0]
+print(mod.value)  # Phospho
+print(mod.info_tags[0])  # INFO:newly discovered
+
+# Multiple info tags
+seq = Sequence.from_proforma("PEPTIDE-[Amidated|INFO:Common C-terminal mod|INFO:Added manually]")
+mod = seq.mods[-2][0]  # C-terminal modification
+print(mod.value)  # Amidated
+print(mod.info_tags)  # ['INFO:Common C-terminal mod', 'INFO:Added manually']
+```
+
+#### Joint representation of experimental data and interpretation
+
+```python
+from sequal.sequence import Sequence
+
+# ProForma with joint interpretation and mass
+seq = Sequence.from_proforma("ELVIS[U:Phospho|+79.966331]K")
+mod = seq.seq[4].mods[0]
+print(mod.value)  # Phospho
+print(mod.source)  # U
+print(mod.synonyms[0])  # +79.966331
+
+# ProForma with observed mass
+seq = Sequence.from_proforma("ELVIS[Phospho|Obs:+79.978]K")
+mod = seq.seq[4].mods[0]
+print(mod.value)  # Phospho
+print(mod.observed_mass)  # 79.978
+
+# Complex case with synonyms, observed mass and info tags
+seq = Sequence.from_proforma("ELVIS[Phospho|O-phospho-L-serine|Obs:+79.966|INFO:Validated]K")
+mod = seq.seq[4].mods[0]
+print(mod.value)  # Phospho
+print(mod.synonyms[0])  # O-phospho-L-serine
+print(mod.observed_mass)  # 79.966
+print(mod.info_tags[0])  # INFO:Validated
+```
+
+#### Converting to ProForma format
+
+```python 
+from sequal.sequence import Sequence
+
+# Parse and convert back to ProForma
+proforma = "ELVIS[Phospho|INFO:newly discovered]K"
+seq = Sequence.from_proforma(proforma)
+print(seq.to_proforma())  # ELVIS[Phospho|INFO:newly discovered]K
+
+# Complex example with multiple modification types
+proforma = "<[Carbamidomethyl]@C>[Acetyl]-PEPTCDE-[Amidated]"
+seq = Sequence.from_proforma(proforma)
+print(seq.to_proforma())  # <[Carbamidomethyl]@C>[Acetyl]-PEPTCDE-[Amidated]
+```
+
 ### Sequence comprehension
 
-Using Sequence Object with Unmodified Protein Sequence
+#### Using Sequence Object with Unmodified Protein Sequence
 
 ```python
 from sequal.sequence import Sequence
@@ -31,7 +122,7 @@ print(seq.seq) #should print "TESTEST"
 print(seq[0:2]) #should print "TE"
 ```
 
-Using Sequence Object with Modified Protein Sequence
+#### Using Sequence Object with Modified Protein Sequence
 
 ```python
 from sequal.sequence import Sequence
@@ -52,7 +143,7 @@ for i in seq.seq:
     print(i, i.mods) #should print N [HexNAc] on the 3rd amino acid
 ```
 
-Custom Annotation Formatting
+#### Custom Annotation Formatting
 
 ```python
 from sequal.sequence import Sequence
@@ -66,7 +157,7 @@ print(seq.to_string_customize(a, individual_annotation_enclose=False, individual
 
 ### Modification
 
-Creating a Modification Object
+#### Creating a Modification Object
 
 ```python
 from sequal.modification import Modification
