@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sequal"
-version = "1.0.3"
+version = "2.0.0"
 description = "A Python package for working with protein sequence and PTM"
 authors = ["Toan K. Phung <toan.phungkhoiquoctoan@gmail.com>"]
 license = "MIT"
