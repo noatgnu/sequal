@@ -180,52 +180,29 @@ class Sequence:
             # Group modifications by value for caret notation
             unknown_mods_by_value = defaultdict(int)
             for mod in chain.mods[-4]:
-                unknown_mods_by_value[mod.value] += 1
+                unknown_mods_by_value[mod.to_proforma()] += 1
 
             # Add unknown position modifications using caret notation where applicable
             for mod_value, count in unknown_mods_by_value.items():
                 ambiguity_str = ""
                 if count > 1:
                     # Use caret notation for multiple occurrences
-                    if mod.ambiguity_group or mod.is_ambiguity_ref:
-                        if mod.is_ambiguity_ref:
-                            ambiguity_str += f"[#{mod.ambiguity_group}]"
 
-                        else:
-                            ambiguity_str += f"[{mod_value}#{mod.ambiguity_group}]"
-                    else:
-                        ambiguity_str += f"[{mod_value}]"
-                    if mod.info_tags:
-                        ambiguity_str = self._add_info_tags(ambiguity_str, mod)
+                    ambiguity_str += f"[{mod_value}]"
                     ambiguity_str += f"^{count}?"
                 else:
                     # Individual notation for single occurrence
-                    if mod.ambiguity_group or mod.is_ambiguity_ref:
-                        if mod.is_ambiguity_ref:
-                            ambiguity_str += f"[#{mod.ambiguity_group}]"
-                        else:
-                            ambiguity_str += f"[{mod_value}#{mod.ambiguity_group}]"
-
-                    else:
-                        ambiguity_str += f"[{mod_value}]"
-                    if mod.info_tags:
-                        ambiguity_str = self._add_info_tags(ambiguity_str, mod)
+                    ambiguity_str = f"[{mod_value}]"
                     ambiguity_str += f"?"
                 result += ambiguity_str
         if -3 in chain.mods:
             for mod in chain.mods[-3]:
                 if mod.mod_type == "labile":
-                    if hasattr(mod, "source") and mod.source:
-                        result += f"{{{mod.source}:{mod.value}}}"
-
-                    else:
-                        result += f"{{{mod.value}}}"
+                    result += f"{{{mod.to_proforma()}}}"
         if -1 in chain.mods:
             n_mod_str = ""
             for mod in chain.mods[-1]:
-                mod_str = f"[{mod.value}]"
-                if mod.info_tags:
-                    mod_str = self._add_info_tags(mod_str, mod)
+                mod_str = f"[{mod.to_proforma()}]"
                 n_mod_str += mod_str
             if n_mod_str:
                 result += n_mod_str + "-"
@@ -253,57 +230,28 @@ class Sequence:
                         range_start = True
                         break
             result += aa.value
+            mod_str_data = ""
             if aa.mods:
                 crosslink_refs_added = set()
                 branch_refs_added = False
-
                 for mod in aa.mods:
+                    print(result)
+                    this_mod_str = mod.to_proforma()
                     if range_start and mod.in_range:
                         continue
-
                     if mod.mod_type == "ambiguous":
-                        if mod.ambiguity_group:
-                            score_str = (
-                                f"({mod.localization_score:.2f})"
-                                if mod.localization_score is not None
-                                else ""
-                            )
-                            if mod.is_ambiguity_ref:
-                                result += f"[#{mod.ambiguity_group}{score_str}]"
-                            else:
-                                result += (
-                                    f"[{mod.value}#{mod.ambiguity_group}{score_str}]"
-                                )
-                        else:
+                        if not mod.has_ambiguity():
                             if mod.in_range:
-                                result += f"[{mod.value}]"
+                                this_mod_str = f"[{this_mod_str}]"
                             else:
-                                result += f"{{{mod.value}}}"
-                    elif hasattr(mod, "_is_branch_ref") and mod._is_branch_ref:
-                        if not branch_refs_added:
-                            result += f"[#BRANCH]"
-                            branch_refs_added = True
-                    elif hasattr(mod, "_is_crosslink_ref") and mod._is_crosslink_ref:
-                        # Only add each crosslink reference once
-                        if mod._crosslink_id not in crosslink_refs_added:
-                            result += f"[#{mod._crosslink_id}]"
-                            crosslink_refs_added.add(mod._crosslink_id)
-                    else:
-                        if hasattr(mod, "source") and mod.source:
-                            result += f"[{mod.source}:{mod.value}"
+                                this_mod_str = f"{{{this_mod_str}}}"
                         else:
-                            result += f"[{mod.value}"
+                            this_mod_str = f"[{this_mod_str}]"
+                    else:
+                        this_mod_str = f"[{this_mod_str}]"
 
-                        # Add branch or crosslink identifier
-                        if hasattr(mod, "_is_branch") and mod._is_branch:
-                            result += "#BRANCH"
-                        elif hasattr(mod, "_crosslink_id") and mod._crosslink_id:
-                            result += f"#{mod._crosslink_id}"
-
-                        result += "]"
-
-                    if mod.info_tags or mod.mass or mod.observed_mass:
-                        result = self._add_info_tags(result, mod)
+                    mod_str_data += this_mod_str
+                result += mod_str_data
 
             if range_start:
                 for start, end, mod in ranges:
@@ -318,9 +266,7 @@ class Sequence:
         if -2 in chain.mods:
             n_mod_str = ""
             for mod in chain.mods[-2]:
-                mod_str = f"[{mod.value}]"
-                if mod.info_tags:
-                    mod_str = self._add_info_tags(mod_str, mod)
+                mod_str = f"[{mod.to_proforma()}]"
                 n_mod_str += mod_str
             if n_mod_str:
                 result += "-" + n_mod_str
@@ -343,76 +289,72 @@ class Sequence:
         str
             The updated result string with info tags.
         """
+        print(result)
         info_str = ""
+        added_info = set()
+        stripped_result = result.lstrip("[")
+        stripped_result = stripped_result.rstrip("]")
+        added_info.add(stripped_result)
+        for i in stripped_result.split(":", 1):
+            i_splitted = i.split("#", 1)
+            if len(i_splitted) > 1:
+                for i2 in i_splitted:
+                    if i2 and i2 not in added_info:
+                        added_info.add(i2)
+            added_info.add(i)
+        if hasattr(mod, "mass") and mod.mass is not None:
+            mass_str = f"+{mod.mass}" if mod.mass > 0 else f"{mod.mass}"
+            if mass_str not in added_info:
+                info_str += f"|{mass_str}"
+                added_info.add(mass_str)
 
-        if hasattr(mod, "mass") and mod.mass:
-            if mod.mass > 0:
-                info_str += f"|+{mod.mass}"
-            else:
-                info_str += f"|-{mod.mass}"
         if hasattr(mod, "synonyms") and mod.synonyms:
             for synonym in mod.synonyms:
-                info_str += f"|{synonym}"
+                if synonym not in added_info:
+                    info_str += f"|{synonym}"
+                    added_info.add(synonym)
+
         if hasattr(mod, "observed_mass") and mod.observed_mass:
-            if mod.observed_mass > 0:
-                info_str += f"|Obs:+{mod.observed_mass}"
-            else:
-                info_str += f"|Obs:-{mod.observed_mass}"
+            obs_str = (
+                f"Obs:+{mod.observed_mass}"
+                if mod.observed_mass > 0
+                else f"Obs:{mod.observed_mass}"
+            )
+            if obs_str not in added_info:
+                info_str += f"|{obs_str}"
+                added_info.add(obs_str)
+
         if hasattr(mod, "info_tags") and mod.info_tags:
             for tag in mod.info_tags:
-                info_str += f"|{tag}"
-        if result == "[]":
-            result = result[:-1] + info_str[1:] + "]"
-        else:
-            result = result[:-1] + info_str + "]"
+                if tag not in added_info:
+                    info_str += f"|{tag}"
+                    added_info.add(tag)
 
+        if info_str:
+            if result.endswith("]"):
+                result = result[:-1] + info_str + "]"
+            else:
+                result += info_str
+        print(result)
         return result
 
     def get_mod_and_add_to_string(self, aa, result):
+        mod_str = ""
         if aa.mods:
-            crosslink_refs_added = set()
-            branch_refs_added = False
             for mod in aa.mods:
+                this_mod_str = mod.to_proforma()
                 if mod.mod_type == "ambiguous":
-                    if mod.ambiguity_group:
-                        score_str = (
-                            f"({mod.localization_score:.2f})"
-                            if mod.localization_score is not None
-                            else ""
-                        )
-                        if mod.is_ambiguity_ref:
-                            result += f"[#{mod.ambiguity_group}{score_str}]"
-                        else:
-                            result += f"[{mod.value}#{mod.ambiguity_group}{score_str}]"
-                    else:
+                    if not mod.has_ambiguity():
                         if mod.in_range:
-                            result += f"[{mod.value}]"
+                            this_mod_str = f"[{this_mod_str}]"
                         else:
-                            result += f"{{{mod.value}}}"
-                elif hasattr(mod, "_is_branch_ref") and mod._is_branch_ref:
-                    if not branch_refs_added:
-                        result += f"[#BRANCH]"
-                        branch_refs_added = True
-                elif hasattr(mod, "_is_crosslink_ref") and mod._is_crosslink_ref:
-                    # Only add each crosslink reference once
-                    if mod._crosslink_id not in crosslink_refs_added:
-                        result += f"[#{mod._crosslink_id}]"
-                        crosslink_refs_added.add(mod._crosslink_id)
-                else:
-                    if hasattr(mod, "source") and mod.source:
-                        result += f"[{mod.source}:{mod.value}"
+                            this_mod_str = f"{{{this_mod_str}}}"
                     else:
-                        result += f"[{mod.value}"
-
-                    # Add branch or crosslink identifier
-                    if hasattr(mod, "_is_branch") and mod._is_branch:
-                        result += "#BRANCH"
-                    elif hasattr(mod, "_crosslink_id") and mod._crosslink_id:
-                        result += f"#{mod._crosslink_id}"
-
-                    result += "]"
-                if mod.info_tags:
-                    result = self._add_info_tags(result, mod)
+                        this_mod_str = f"[{this_mod_str}]"
+                else:
+                    this_mod_str = f"[{this_mod_str}]"
+                mod_str += this_mod_str
+            result += mod_str
         return result
 
     def to_proforma(self):

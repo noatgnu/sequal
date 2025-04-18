@@ -265,12 +265,12 @@ class ProFormaParser:
                     if crosslink_match:
                         mod_base, crosslink_id = crosslink_match.groups()
                         mod = ProFormaParser._create_modification(
-                            mod_base, crosslink_id=crosslink_id
+                            mod_str, crosslink_id=crosslink_id
                         )
                     elif branch_match:
                         mod_base = branch_match.group(1)
                         mod = ProFormaParser._create_modification(
-                            mod_base, is_branch=True
+                            mod_str, is_branch=True
                         )
                     else:
                         mod = ProFormaParser._create_modification(mod_str)

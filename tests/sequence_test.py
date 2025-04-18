@@ -765,7 +765,7 @@ class TestProForma(unittest.TestCase):
         assert mod.value == "Phospho"
         print(mod.mod_value)
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:newly discovered"
+        assert mod.info_tags[0] == "newly discovered"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
@@ -776,8 +776,8 @@ class TestProForma(unittest.TestCase):
 
         mod2 = seq2.seq[4].mods[0]
         assert len(mod2.info_tags) == 2
-        assert mod2.info_tags[0] == "INFO:newly discovered"
-        assert mod2.info_tags[1] == "INFO:Created on 2021-06"
+        assert mod2.info_tags[0] == "newly discovered"
+        assert mod2.info_tags[1] == "Created on 2021-06"
 
         # Check roundtrip
         assert seq2.to_proforma() == proforma2
@@ -793,7 +793,7 @@ class TestProForma(unittest.TestCase):
         mod = seq.mods[-1][0]
         assert mod.value == "Acetyl"
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Added during processing"
+        assert mod.info_tags[0] == "Added during processing"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
@@ -807,7 +807,7 @@ class TestProForma(unittest.TestCase):
         mod = seq.mods[-2][0]
         assert mod.value == "Amidated"
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Common C-terminal mod"
+        assert mod.info_tags[0] == "Common C-terminal mod"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
@@ -822,7 +822,7 @@ class TestProForma(unittest.TestCase):
         assert mod.value == "13C"
         assert mod.global_mod_type == "isotope"
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Stable isotope labeling"
+        assert mod.info_tags[0] == "Stable isotope labeling"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
@@ -838,7 +838,7 @@ class TestProForma(unittest.TestCase):
         assert mod.global_mod_type == "fixed"
         assert mod.target_residues == ["C"]
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Standard alkylation"
+        assert mod.info_tags[0] == "Standard alkylation"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
@@ -853,21 +853,21 @@ class TestProForma(unittest.TestCase):
         mod = seq.global_mods[0]
         assert mod.value == "Carbamidomethyl"
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Standard alkylation"
+        assert mod.info_tags[0] == "Standard alkylation"
 
         # N-terminal mod
         assert len(seq.mods[-1]) == 1
         mod = seq.mods[-1][0]
         assert mod.value == "Acetyl"
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Added during processing"
+        assert mod.info_tags[0] == "Added during processing"
 
         # C-terminal mod
         assert len(seq.mods[-2]) == 1
         mod = seq.mods[-2][0]
         assert mod.value == "Amidated"
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Common C-terminal mod"
+        assert mod.info_tags[0] == "Common C-terminal mod"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
@@ -880,7 +880,7 @@ class TestProForma(unittest.TestCase):
         mod = seq.seq[4].mods[0]
         assert mod.value == "Phospho"
         assert mod.source == "U"
-        assert mod.mass == 79.966331
+        assert mod.mod_value.pipe_values[1].mass == 79.966331
         assert seq.to_proforma() == proforma
 
         proforma = "ELVIS[+79.966331]K"
@@ -893,7 +893,7 @@ class TestProForma(unittest.TestCase):
         mod = seq.seq[4].mods[0]
         assert mod.value == "Phospho"
         assert mod.source == "U"
-        assert mod.observed_mass == 79.978
+        assert mod.mod_value.pipe_values[1].observed_mass == 79.978
         assert seq.to_proforma() == proforma
 
         # Complex case with multiple synonyms
@@ -901,14 +901,155 @@ class TestProForma(unittest.TestCase):
         seq = Sequence.from_proforma(proforma)
         mod = seq.seq[4].mods[0]
         assert mod.value == "Phospho"
-        assert len(mod.synonyms) == 1
-        assert mod.synonyms[0] == "O-phospho-L-serine"
-        assert mod.observed_mass == 79.966
+        assert len(mod.synonyms) == 2
+        assert mod.synonyms[1] == "O-phospho-L-serine"
+        assert mod.mod_value.pipe_values[2].observed_mass == 79.966
         assert len(mod.info_tags) == 1
-        assert mod.info_tags[0] == "INFO:Validated"
+        assert mod.info_tags[0] == "Validated"
 
         # Check roundtrip
         assert seq.to_proforma() == proforma
+
+    def test_crosslink_joint_representation(self):
+        """Test joint representation of crosslinks with mass and other information."""
+        # Crosslink with mass shift and info tag
+        proforma = "PEPTK[XL:DSS#XL1|+138.068|INFO:reaction=NHS]IDE"
+        seq = Sequence.from_proforma(proforma)
+
+        mod = seq.seq[4].mods[0]
+        assert mod.value == "DSS"
+        assert mod.source == "XL"
+        assert mod.crosslink_id == "XL1"
+        assert abs(mod.mod_value.pipe_values[1].mass - 138.068) < 0.0001
+        assert "reaction=NHS" in mod.info_tags
+
+        # Check round-trip conversion
+        assert seq.to_proforma() == proforma
+
+        # Test with crosslink reference
+        proforma = "PEPTK[XL:DSS#XL1|+138.068]IDEQR[#XL1]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check crosslink reference
+        mod_ref = seq.seq[9].mods[0]
+        assert mod_ref.is_crosslink_ref
+        assert mod_ref.crosslink_id == "XL1"
+
+        # Check round-trip
+        assert seq.to_proforma() == proforma
+
+    def test_branch_joint_representation(self):
+        """Test joint representation of branches with other features."""
+        # Branch with observed mass and synonym
+        proforma = "PEPTK[DSS#BRANCH|Obs:+156.079|DSBU]IDE"
+        seq = Sequence.from_proforma(proforma)
+
+        mod = seq.seq[4].mods[0]
+        assert mod.value == "DSS"
+        assert mod.source == None
+        assert mod.mod_value.pipe_values[0].is_branch
+        assert mod.mod_value.pipe_values[1].observed_mass == 156.079
+        assert "DSBU" in mod.synonyms
+
+        # Check round-trip
+        assert seq.to_proforma() == proforma
+
+        # Branch with reference and info tag
+        proforma = "PEPTK[XL:DSS#BRANCH|INFO:BranchData]IDE[#BRANCH]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check branch reference
+        mod_ref = seq.seq[7].mods[0]
+        assert mod_ref._is_branch_ref
+
+        # Check round-trip
+        assert seq.to_proforma() == proforma
+
+    def test_ambiguity_group_joint_representation(self):
+        """Test joint representation of ambiguity groups."""
+        # Ambiguity group with localization score and mass
+        proforma = "PEPT[U:Phospho#1(0.75)|+79.966|INFO:confidence=high]KIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        mod = seq.seq[3].mods[0]
+        assert mod.value == "Phospho"
+        assert mod.source == "U"
+        assert mod.ambiguity_group == "1"
+        assert abs(mod.mod_value.pipe_values[0].localization_score - 0.75) < 0.0001
+        assert abs(mod.mod_value.pipe_values[1].mass - 79.966) < 0.0001
+        assert "confidence=high" in mod.info_tags
+
+        # Check round-trip
+        assert seq.to_proforma() == proforma
+
+        # Ambiguity reference
+        proforma = "PEPT[U:Phospho#1(0.75)]K[#1]IDE"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check ambiguity reference
+        mod_ref = seq.seq[4].mods[0]
+        assert mod_ref.is_ambiguity_ref
+        assert mod_ref.ambiguity_group == "1"
+
+        # Check round-trip
+        assert seq.to_proforma() == proforma
+
+    def test_complex_multi_feature_representation(self):
+        """Test complex joint representation with multiple features."""
+        proforma = "PEP[U:Deamidation|+0.984]T[U:Phospho#1(0.75)|+79.966]K[XL:DSS#XL2|INFO:crosslinker]IDE[#BRANCH]R[#XL2]S[#1]"
+        seq = Sequence.from_proforma(proforma)
+
+        # Check deamidation
+        mod1 = seq.seq[2].mods[0]
+        assert mod1.value == "Deamidation"
+        assert abs(mod1.mod_value.pipe_values[1].mass - 0.984) < 0.0001
+
+        # Check phosphorylation with ambiguity group
+        mod2 = seq.seq[3].mods[0]
+        assert mod2.value == "Phospho"
+        assert abs(mod2.mod_value.pipe_values[1].mass - 79.966) < 0.0001
+        assert mod2.ambiguity_group == "1"
+        assert abs(mod2.mod_value.pipe_values[0].localization_score - 0.75) < 0.0001
+
+        # Check crosslink
+        mod3 = seq.seq[4].mods[0]
+        assert mod3.value == "DSS"
+        assert mod3.crosslink_id == "XL2"
+        assert "crosslinker" in mod3.info_tags
+
+        # Check branch reference
+        mod4 = seq.seq[9].mods[0]
+
+        assert mod4.mod_value.pipe_values[0].is_ambiguity_ref
+
+        # Check crosslink reference
+        mod5 = seq.seq[8].mods[0]
+        assert mod5.mod_value.pipe_values[0].is_crosslink_ref
+        assert mod5.mod_value.pipe_values[0].crosslink_id == "XL2"
+
+        # Check ambiguity reference
+        mod6 = seq.seq[9].mods[0]
+        assert mod6.mod_value.pipe_values[0].is_ambiguity_ref
+        assert mod6.mod_value.pipe_values[0].ambiguity_group == "1"
+
+        # Check round-trip
+        assert seq.to_proforma() == proforma
+
+    def test_duplicate_info_prevention(self):
+        """Test prevention of duplicate information in joint representation."""
+        # Test with duplicate modification
+        proforma = "PEPT[U:Phospho|Phospho|+79.966|+79.966]IDE"
+        seq = Sequence.from_proforma(proforma)
+
+        # When converted back, duplicates should be removed
+        assert seq.to_proforma() != "PEPT[U:Phospho|+79.966|Phospho]IDE"
+
+        # Test with duplicate observed mass
+        proforma = "PEPT[Phospho|+79.966|Obs:+79.968|Obs:+79.968]IDE"
+        seq = Sequence.from_proforma(proforma)
+
+        # When converted back, duplicates should be removed
+        assert seq.to_proforma() == "PEPT[Phospho|+79.966|Obs:+79.968]IDE"
 
 
 if __name__ == "__main__":

@@ -30,16 +30,16 @@ from sequal.sequence import Sequence
 # Basic ProForma notation with modification
 seq = Sequence.from_proforma("ELVIS[Phospho]K")
 print(seq.seq[4].value)  # S
-print(seq.seq[4].mods[0].value)  # Phospho
+print(seq.seq[4].mods[0].synonyms[0])  # Phospho
 
 # ProForma with terminal modifications
 seq = Sequence.from_proforma("[Acetyl]-PEPTIDE-[Amidated]")
-print(seq.mods[-1][0].value)  # Acetyl (N-terminal)
-print(seq.mods[-2][0].value)  # Amidated (C-terminal)
+print(seq.mods[-1][0].synonyms[0])  # Acetyl (N-terminal)
+print(seq.mods[-2][0].synonyms[0])  # Amidated (C-terminal)
 
 # ProForma with global modifications
 seq = Sequence.from_proforma("<[Carbamidomethyl]@C>PEPTCDE")
-print(seq.global_mods[0].value)  # Carbamidomethyl
+print(seq.global_mods[0].synonyms[0])  # Carbamidomethyl
 print(seq.global_mods[0].target_residues)  # ['C']
 
 # ProForma with sequence ambiguity
@@ -50,20 +50,20 @@ print(seq.sequence_ambiguities[0].position)  # 4
 
 #### Working with information tags
 
-```python 
+```python
 from sequal.sequence import Sequence
 
 # ProForma with info tags
 seq = Sequence.from_proforma("ELVIS[Phospho|INFO:newly discovered]K")
 mod = seq.seq[4].mods[0]
-print(mod.value)  # Phospho
-print(mod.info_tags[0])  # INFO:newly discovered
+print(mod.synonyms[0])  # Phospho
+print(mod.info_tags[0])  # newly discovered
 
 # Multiple info tags
 seq = Sequence.from_proforma("PEPTIDE-[Amidated|INFO:Common C-terminal mod|INFO:Added manually]")
 mod = seq.mods[-2][0]  # C-terminal modification
-print(mod.value)  # Amidated
-print(mod.info_tags)  # ['INFO:Common C-terminal mod', 'INFO:Added manually']
+print(mod.synonyms[0])  # Amidated
+print(mod.info_tags)  # ['Common C-terminal mod', 'Added manually']
 ```
 
 #### Joint representation of experimental data and interpretation
@@ -74,28 +74,28 @@ from sequal.sequence import Sequence
 # ProForma with joint interpretation and mass
 seq = Sequence.from_proforma("ELVIS[U:Phospho|+79.966331]K")
 mod = seq.seq[4].mods[0]
-print(mod.value)  # Phospho
-print(mod.source)  # U
-print(mod.synonyms[0])  # +79.966331
+print(mod.mod_value.pipe_values[0].value)  # Phospho
+print(mod.mod_value.pipe_values[0].source)  # U
+print(mod.mod_value.pipe_values[1].mass)  # 79.966331
 
 # ProForma with observed mass
 seq = Sequence.from_proforma("ELVIS[Phospho|Obs:+79.978]K")
 mod = seq.seq[4].mods[0]
-print(mod.value)  # Phospho
-print(mod.observed_mass)  # 79.978
+print(mod.synonyms[0])  # Phospho
+print(mod.mod_value.pipe_values[1].observed_mass)  # 79.978
 
 # Complex case with synonyms, observed mass and info tags
 seq = Sequence.from_proforma("ELVIS[Phospho|O-phospho-L-serine|Obs:+79.966|INFO:Validated]K")
 mod = seq.seq[4].mods[0]
-print(mod.value)  # Phospho
-print(mod.synonyms[0])  # O-phospho-L-serine
-print(mod.observed_mass)  # 79.966
-print(mod.info_tags[0])  # INFO:Validated
+print(mod.synonyms[0])  # Phospho
+print(mod.synonyms[1])  # O-phospho-L-serine
+print(mod.mod_value.pipe_values[3].observed_mass)  # 79.966
+print(mod.info_tags[0])  # Validated
 ```
 
 #### Converting to ProForma format
 
-```python 
+```python
 from sequal.sequence import Sequence
 
 # Parse and convert back to ProForma
