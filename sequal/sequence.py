@@ -10,6 +10,7 @@ Functions:
     variable_position_placement_generator(positions): Generates different position combinations for modifications.
     ordered_serialize_position_dict(positions): Serializes a dictionary of positions in an ordered manner.
 """
+
 import itertools
 import json
 import re
@@ -32,7 +33,7 @@ from typing import (
 
 from sequal.amino_acid import AminoAcid
 from sequal.base_block import BaseBlock
-from sequal.modification import Modification, ModificationMap, GlobalModification
+from sequal.modification import GlobalModification, Modification, ModificationMap
 from sequal.proforma import ProFormaParser, SequenceAmbiguity
 
 mod_pattern = re.compile(r"[\(|\[]+([^\)]+)[\)|\]]+")

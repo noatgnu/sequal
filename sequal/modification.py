@@ -851,9 +851,11 @@ class ModificationValue:
             self._primary_value = ""
             pipe_val = PipeValue(
                 value,
-                PipeValue.CROSSLINK
-                if value[1:].startswith("XL")
-                else PipeValue.AMBIGUITY,
+                (
+                    PipeValue.CROSSLINK
+                    if value[1:].startswith("XL")
+                    else PipeValue.AMBIGUITY
+                ),
                 value,
             )
             pipe_val.is_crosslink_ref = pipe_val.type == PipeValue.CROSSLINK
@@ -910,7 +912,7 @@ class ModificationValue:
                             pipe_val.is_valid_glycan = is_valid_glycan
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
-                        if self._source.upper() == "GNO" or self._source.upper() = "G":
+                        if self._source.upper() == "GNO" or self._source.upper() == "G":
                             pipe_val.is_glycan = True
                         pipe_val.source = self._source
                         pipe_val.ambiguity_group = pv_parts[1]
@@ -948,7 +950,7 @@ class ModificationValue:
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = self._source
                         pipe_val.is_valid_glycan = is_valid_glycan
-                    elif self._source.upper() == "GNO" or self._source.upper() = "G":
+                    elif self._source.upper() == "GNO" or self._source.upper() == "G":
                         pipe_val = PipeValue(parts[1], PipeValue.GAP, value)
                         pipe_val.source = self._source
                         pipe_val.is_valid_glycan = True
@@ -1080,9 +1082,11 @@ class ModificationValue:
         elif component.startswith("#"):
             pipe_val = PipeValue(
                 component,
-                PipeValue.CROSSLINK
-                if component[1:].startswith("XL")
-                else PipeValue.AMBIGUITY,
+                (
+                    PipeValue.CROSSLINK
+                    if component[1:].startswith("XL")
+                    else PipeValue.AMBIGUITY
+                ),
                 component,
             )
             pipe_val.is_crosslink_ref = pipe_val.type == PipeValue.CROSSLINK
@@ -1135,7 +1139,7 @@ class ModificationValue:
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = is_valid_glycan
-                    elif source.upper() == "GNO" or self._source.upper() = "G":
+                    elif source.upper() == "GNO" or self._source.upper() == "G":
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = True
@@ -1150,7 +1154,7 @@ class ModificationValue:
                             pipe_val.is_valid_glycan = is_valid_glycan
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
-                        if source.upper() == "GNO" or self._source.upper() = "G":
+                        if source.upper() == "GNO" or self._source.upper() == "G":
                             pipe_val.is_valid_glycan = True
                         pipe_val.ambiguity_group = pv_parts[1]
                         if (
@@ -1183,7 +1187,7 @@ class ModificationValue:
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = parts[0]
                         pipe_val.is_valid_glycan = is_valid_glycan
-                    elif source.upper() == "GNO" or self._source.upper() = "G":
+                    elif source.upper() == "GNO" or self._source.upper() == "G":
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = True

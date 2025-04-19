@@ -7,6 +7,10 @@ license = "MIT"
 keywords = ["protein sequence", "modification", "mass spectrometry"]
 readme = "README.md"
 
+[tool.black]
+target-version = ["py39", "py310", "py311"]
+
+
 [tool.poetry.dependencies]
 python = "^3.9"
 

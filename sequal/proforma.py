@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 from typing import Dict, List, Optional, Tuple
 
-from sequal.modification import Modification, GlobalModification, ModificationValue
+from sequal.modification import GlobalModification, Modification, ModificationValue
 
 
 class ProFormaParser:
