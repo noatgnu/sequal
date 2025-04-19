@@ -4,9 +4,18 @@ Sequal is a Python package for in-silico generation of modified sequences from a
 
 ## Features
 
-- Generate all possible sequences with static and variable modifications.
-- Support for custom modification annotations.
-- Utilities for mass spectrometry fragment generation.
+- Full support for ProForma 2.0 standard for proteoform notation
+- Generate all possible sequences with static and variable modifications
+- Flexible modification handling with support for:
+  - Formula validation for chemical modifications
+  - Glycan structure validation
+  - Info tags and metadata
+  - Observed mass recording
+- Indexing and slicing for convenient access to modification values
+- Support for custom modification annotations
+- Sequence ambiguity representation
+- Utilities for mass spectrometry fragment generation
+- Labile and non-labile ion simulation
 
 ## Installation
 
@@ -91,6 +100,63 @@ print(mod.synonyms[0])  # Phospho
 print(mod.synonyms[1])  # O-phospho-L-serine
 print(mod.mod_value.pipe_values[3].observed_mass)  # 79.966
 print(mod.info_tags[0])  # Validated
+```
+
+#### Accessing mod_value with indexing and slicing
+
+```python
+from sequal.sequence import Sequence
+
+# Using indexing to access pipe values
+seq = Sequence.from_proforma("ELVIS[Unimod:21|Phospho|INFO:Validated]K")
+mod = seq.seq[4].mods[0]
+print(mod.mod_value[0].value)  # Primary pipe value - Unimod:21
+print(mod.mod_value[1].value)  # Second pipe value - Phospho
+print(mod.mod_value[2].type)   # PipeValue.INFO_TAG
+
+# Using slicing to access multiple pipe values
+pipe_values = mod.mod_value[1:3]  # Get second and third pipe values
+for pv in pipe_values:
+    print(f"{pv.type}: {pv.value}")
+
+# Iterating through all pipe values
+for i, pv in enumerate(mod.mod_value):
+    print(f"Pipe value {i}: {pv.value}")
+
+# Getting the length of pipe values
+print(f"Number of pipe values: {len(mod.mod_value)}")
+```
+
+#### Working with formula and glycan modifications
+
+```python
+from sequal.sequence import Sequence
+
+# Working with formula modifications
+seq = Sequence.from_proforma("PEPTIDE[Formula:C2H3NO]")
+mod = seq.seq[6].mods[0]
+print(f"Formula: {mod.mod_value[0].value}")
+print(f"Is valid formula: {mod.mod_value[0].is_valid}")
+
+# Invalid formula - still parsed but marked invalid
+seq = Sequence.from_proforma("PEPTIDE[Formula:123]")
+mod = seq.seq[6].mods[0]
+print(f"Invalid formula: {mod.mod_value[0].value}")
+print(f"Is valid formula: {mod.mod_value[0].is_valid}")  # False
+
+# Working with glycan modifications
+seq = Sequence.from_proforma("PEPTID[Glycan:HexNAc1Hex3]E")
+mod = seq.seq[5].mods[0]
+print(f"Glycan: {mod.mod_value[0].value}")
+print(f"Is valid glycan: {mod.mod_value[0].is_valid}")
+print(f"Glycan pipe value type: {mod.mod_value[0].type}")  # PipeValue.GLYCAN
+
+# Invalid glycan - still parsed but marked invalid and stored as SYNONYM type
+seq = Sequence.from_proforma("PEPTID[Glycan:Invalid123]E")
+mod = seq.seq[5].mods[0]
+print(f"Invalid glycan: {mod.mod_value[0].value}")
+print(f"Is valid glycan: {mod.mod_value[0].is_valid}")  # False
+print(f"Invalid glycan pipe value type: {mod.mod_value[0].type}")  # PipeValue.SYNONYM
 ```
 
 #### Converting to ProForma format
