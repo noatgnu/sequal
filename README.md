@@ -1,5 +1,6 @@
 # SEQUAL / seq=
-
+![Test](https://github.com/noatgnu/sequal/actions/workflows/test.yml/badge.svg)
+[![codecov](https://codecov.io/gh/noatgnu/sequal/branch/main/graph/badge.svg)](https://codecov.io/gh/{username}/sequal)
 Sequal is a Python package for in-silico generation of modified sequences from a sequence input and modifications. It is designed to assist in protein engineering, mass spectrometry analysis, drug design, and other bioinformatics research.
 
 ## Features

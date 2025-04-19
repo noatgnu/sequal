@@ -37,8 +37,14 @@ jobs:
     - name: Check code formatting
       run: poetry run black --check .
 
-    - name: Run tests
-      run: poetry run pytest
+    - name: Run tests with coverage
+      run: poetry run pytest --cov=sequal --cov-report=xml
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
 
     - name: Run pre-commit checks
       run: |
