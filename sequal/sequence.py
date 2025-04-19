@@ -235,7 +235,6 @@ class Sequence:
                 crosslink_refs_added = set()
                 branch_refs_added = False
                 for mod in aa.mods:
-                    print(result)
                     this_mod_str = mod.to_proforma()
                     if range_start and mod.in_range:
                         continue

@@ -90,24 +90,6 @@ class Modification(BaseBlock):
         self.localization_score = localization_score
         self._mod_value = mod_value or ModificationValue(value, mass=mass)
 
-        if ":" in value:
-            parts = value.split(":", 1)
-            if parts[0] in self.KNOWN_SOURCES:
-                self._source = parts[0]
-                value = parts[1]
-                if "#" in value and not (
-                    self.ambiguity_group and self.is_ambiguity_ref
-                ):
-                    value_parts = value.split("#", 1)
-                    value = value_parts[0]
-                    self._crosslink_id = value_parts[1]
-                if self._source == "Formula":
-                    if not self._validate_formula(value):
-                        raise ValueError(f"Invalid formula: {value}")
-                elif self._source == "Glycan":
-                    if not self._validate_glycan(value):
-                        raise ValueError(f"Invalid glycan: {value}")
-
         if value.startswith("#") and is_crosslink_ref:
             self._crosslink_id = value[1:]
             value = "#" + self._crosslink_id
@@ -466,7 +448,6 @@ class Modification(BaseBlock):
         if self.mod_value:
             seen = set()
             for pv in self.mod_value._pipe_values:
-                print(pv)
                 mod_part = ""
                 if pv.source:
                     mod_part = f"{pv.source}:"
@@ -502,12 +483,12 @@ class Modification(BaseBlock):
                         else ""
                     )
                     mod_part += f"#{pv.ambiguity_group}{score_str}"
-                print(mod_part)
+
                 if mod_part in seen:
                     continue
                 parts.append(mod_part)
                 seen.add(mod_part)
-            print(parts)
+
             return "|".join(parts)
         # If mod_value isn't available, use basic properties
         else:
@@ -755,6 +736,8 @@ class PipeValue:
     BRANCH = "branch"
     AMBIGUITY = "ambiguity"
     GLYCAN = "glycan"
+    GAP = "gap"
+    FORMULA = "formula"
 
     def __init__(self, value: str, value_type: str, original_value: str = None):
         self.value = value
@@ -771,7 +754,8 @@ class PipeValue:
         self.original_value = original_value
         self.mass = None
         self.observed_mass = None
-
+        self.is_valid_glycan = False
+        self.is_valid_formula = False
         # Extract special properties based on type
         self._extract_properties()
 
@@ -818,6 +802,8 @@ class ModificationValue:
         "MOD",
         "Obs",
         "Formula",
+        "FORMULA",
+        "GLYCAN",
         "Glycan",
         "Info",
         "INFO",
@@ -894,7 +880,12 @@ class ModificationValue:
             if parts[0] in self.KNOWN_SOURCES:
                 self._source = parts[0]
                 self._primary_value = parts[1]
-
+                is_valid_glycan = False
+                is_valid_formula = False
+                if self._source.upper() == "FORMULA":
+                    is_valid_formula = self._validate_formula(self._primary_value)
+                elif self._source.upper() == "GlYCAN":
+                    is_valid_glycan = self._validate_glycan(self._primary_value)
                 # Handle crosslinks or ambiguity in primary value
                 if "#" in self._primary_value:
                     pv_parts = self._primary_value.split("#", 1)
@@ -915,6 +906,11 @@ class ModificationValue:
                         pipe_val = PipeValue(
                             f"{self._primary_value}", PipeValue.AMBIGUITY, value
                         )
+                        if is_valid_glycan:
+                            pipe_val.is_valid_glycan = is_valid_glycan
+                        elif is_valid_formula:
+                            pipe_val.is_valid_formula = is_valid_formula
+                        pipe_val.source = self._source
                         pipe_val.ambiguity_group = pv_parts[1]
                         # parse localization score if present
                         if (
@@ -942,20 +938,22 @@ class ModificationValue:
                     if self._source.upper() == "INFO":
                         pipe_val = PipeValue(parts[1], PipeValue.INFO_TAG, value)
                         pipe_val.source = self._source
-                        self._pipe_values.append(pipe_val)
                     elif self._source.upper() == "OBS":
                         pipe_val = PipeValue(parts[1], PipeValue.OBSERVED_MASS, value)
                         pipe_val.source = self._source
                         pipe_val.observed_mass = float(parts[1])
-                        self._pipe_values.append(pipe_val)
                     elif self._source.upper() == "GLYCAN":
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = self._source
-                        self._pipe_values.append(pipe_val)
+                        pipe_val.is_valid_glycan = is_valid_glycan
+                    elif self._source.upper() == "FORMULA":
+                        pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
+                        pipe_val.source = self._source
+                        pipe_val.is_valid_formula = is_valid_formula
                     else:
                         pipe_val = PipeValue(parts[1], PipeValue.SYNONYM, value)
                         pipe_val.source = self._source
-                        self._pipe_values.append(pipe_val)
+                    self._pipe_values.append(pipe_val)
 
             elif parts[0].upper() == "MASS":
                 self._primary_value = value
@@ -1111,21 +1109,36 @@ class ModificationValue:
                 if "#" in value:
                     pv_parts = value.split("#", 1)
                     value = pv_parts[0]
-
+                    is_valid_glycan = False
+                    is_valid_formula = False
+                    if source.upper() == "FORMULA":
+                        is_valid_formula = self._validate_formula(value)
+                    elif source.upper() == "GlYCAN":
+                        is_valid_glycan = self._validate_glycan(value)
                     # Create appropriate pipe value
                     if source in ["XL", "XLMOD", "XL-MOD", "X"]:
                         pipe_val = PipeValue(value, PipeValue.CROSSLINK, component)
                         pipe_val.source = source
                         pipe_val.crosslink_id = pv_parts[1]
-                        self._pipe_values.append(pipe_val)
                     elif pv_parts[1] == "BRANCH":
                         pipe_val = PipeValue(value, PipeValue.BRANCH, component)
                         pipe_val.source = source
                         pipe_val.is_branch = True
-                        self._pipe_values.append(pipe_val)
+                    elif source.upper() == "GLYCAN":
+                        pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
+                        pipe_val.source = source
+                        pipe_val.is_valid_glycan = is_valid_glycan
+                    elif source.upper() == "FORMULA":
+                        pipe_val = PipeValue(value, PipeValue.FORMULA, component)
+                        pipe_val.source = source
+                        pipe_val.is_valid_formula = is_valid_formula
                     else:
                         pipe_val = PipeValue(value, PipeValue.AMBIGUITY, component)
                         pipe_val.source = source
+                        if is_valid_glycan:
+                            pipe_val.is_valid_glycan = is_valid_glycan
+                        elif is_valid_formula:
+                            pipe_val.is_valid_formula = is_valid_formula
                         pipe_val.ambiguity_group = pv_parts[1]
                         if (
                             "(" in pipe_val.ambiguity_group
@@ -1146,7 +1159,7 @@ class ModificationValue:
                                     )
                                 except ValueError:
                                     pass
-                        self._pipe_values.append(pipe_val)
+                    self._pipe_values.append(pipe_val)
                 else:
                     if source.upper() == "INFO":
                         pipe_val = PipeValue(value, PipeValue.INFO_TAG, component)
@@ -1156,6 +1169,12 @@ class ModificationValue:
                     elif self._source.upper() == "GLYCAN":
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = parts[0]
+                        pipe_val.is_valid_glycan = is_valid_glycan
+                    elif self._source.upper() == "FORMULA":
+                        pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
+                        pipe_val.source = parts[0]
+                        pipe_val.is_valid_formula = is_valid_formula
+
                     else:
                         pipe_val = PipeValue(value, PipeValue.SYNONYM, component)
 
@@ -1355,3 +1374,145 @@ class ModificationValue:
                 parts.append(pv.value)
 
         return "|".join(parts)
+
+    @staticmethod
+    def _validate_formula(formula: str) -> bool:
+        """
+        Validate a chemical formula according to the specified rules.
+
+        Validates:
+        1. Element symbols followed by optional numbers (C12, H20, O)
+        2. Isotopes in brackets ([13C2])
+        3. Spaces between elements
+        4. Negative cardinalities (C-2)
+        """
+        # Empty formula is invalid
+        if not formula.strip():
+            return False
+
+        # Check for balanced brackets
+        if formula.count("[") != formula.count("]"):
+            return False
+
+        # Remove spaces for processing (allowed by spec)
+        formula_no_spaces = formula.replace(" ", "")
+
+        # Process through the formula
+        i = 0
+        while i < len(formula_no_spaces):
+            # Handle isotopes [13C2]
+            if formula_no_spaces[i] == "[":
+                end_bracket = formula_no_spaces.find("]", i)
+                if end_bracket == -1:
+                    return False
+                # Extract isotope content
+                isotope_part = formula_no_spaces[i + 1 : end_bracket]
+                # Must start with digits followed by element
+                if not re.match(r"\d+[A-Z][a-z]?(-?\d+)?", isotope_part):
+                    return False
+
+                i = end_bracket + 1
+
+                # Check for cardinality after bracket
+                if i < len(formula_no_spaces) and (
+                    formula_no_spaces[i] == "-" or formula_no_spaces[i].isdigit()
+                ):
+                    start = i
+                    if formula_no_spaces[i] == "-":
+                        i += 1
+                    while i < len(formula_no_spaces) and formula_no_spaces[i].isdigit():
+                        i += 1
+                    if int(formula_no_spaces[start:i]) == 0:
+                        return False
+
+            # Handle regular elements (C12, H, Na+)
+            elif formula_no_spaces[i].isupper():
+                # Element symbol (1-2 chars)
+                if (
+                    i + 1 < len(formula_no_spaces)
+                    and formula_no_spaces[i + 1].islower()
+                ):
+                    i += 2
+                else:
+                    i += 1
+
+                # Check for cardinality
+                if i < len(formula_no_spaces) and (
+                    formula_no_spaces[i] == "-" or formula_no_spaces[i].isdigit()
+                ):
+                    start = i
+                    if formula_no_spaces[i] == "-":
+                        i += 1
+                    while i < len(formula_no_spaces) and formula_no_spaces[i].isdigit():
+                        i += 1
+                    if int(formula_no_spaces[start:i]) == 0:
+                        return False
+            else:
+                # Unexpected character
+                return False
+
+        return True
+
+    @staticmethod
+    def _validate_glycan(glycan: str) -> bool:
+        """Validate a glycan string per ProForma specification."""
+        # Remove spaces for processing
+        glycan_clean = glycan.replace(" ", "")
+
+        # Build pattern to match monosaccharide with optional number
+        monos = list(monosaccharides)
+        monos.sort(key=len, reverse=True)
+        mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
+
+        # Check if entire string matches consecutive monosaccharide patterns
+        i = 0
+        while i < len(glycan_clean):
+            match = re.match(mono_pattern, glycan_clean[i:])
+            if not match:
+                return False
+            i += len(match.group(0))
+
+        return i == len(glycan_clean)
+
+    def __getitem__(self, index):
+        """
+        Access pipe values by index or slice.
+
+        Parameters
+        ----------
+        index : int or slice
+            Index or slice to access pipe values
+
+        Returns
+        -------
+        PipeValue or list
+            Single PipeValue for integer index, list of PipeValues for slice
+
+        Raises
+        ------
+        IndexError
+            If index is out of range
+        """
+        return self._pipe_values[index]
+
+    def __len__(self):
+        """
+        Get the number of pipe values.
+
+        Returns
+        -------
+        int
+            Number of pipe values
+        """
+        return len(self._pipe_values)
+
+    def __iter__(self):
+        """
+        Allow iteration through pipe values.
+
+        Returns
+        -------
+        iterator
+            Iterator over pipe values
+        """
+        return iter(self._pipe_values)

@@ -354,7 +354,8 @@ class TestProForma(unittest.TestCase):
 
     def test_formula_notation(self):
         """Test modifications with chemical formulas."""
-        proforma_strings = [
+        # Valid formulas
+        valid_proforma = [
             "SEQUEN[Formula:C12H20O2]CE",
             "SEQUEN[Formula:C12 H20 O2]CE",  # with spaces
             "SEQUEN[Formula:[13C2]CH6N]CE",  # with isotope
@@ -362,17 +363,48 @@ class TestProForma(unittest.TestCase):
             "SEQUEN[Formula:[13C2][12C-2]H2N]CE",  # complex isotope replacement
         ]
 
-        for proforma in proforma_strings:
+        for proforma in valid_proforma:
             seq = Sequence.from_proforma(proforma)
 
-            # Verify the sequence itself
+            # Verify sequence
             assert seq.to_stripped_string() == "SEQUENCE"
 
             # Check modification
             mod = seq.seq[5].mods[0]
             assert mod.source == "Formula"
 
+            # Check pipe value validation status
+            assert mod.mod_value is not None
+            for pv in mod.mod_value:
+                if pv.source == "Formula":
+                    assert pv.is_valid_formula
+
             # Verify roundtrip conversion
+            assert seq.to_proforma() == proforma
+
+        # Invalid formulas
+        invalid_proforma = [
+            "SEQUEN[Formula:123]CE",  # Not starting with element
+            "SEQUEN[Formula:C12H20O2+]CE",  # Invalid character
+            "SEQUEN[Formula:C-0]CE",  # Zero cardinality
+        ]
+
+        for proforma in invalid_proforma:
+            seq = Sequence.from_proforma(proforma)
+
+            # Check modification is preserved but marked invalid
+            mod = seq.seq[5].mods[0]
+            assert mod.source == "Formula"
+
+            # Check pipe value validation status
+            assert mod.mod_value is not None
+            for pv in mod.mod_value:
+                if pv.source == "Formula":
+                    assert (
+                        not pv.is_valid_formula
+                    ), f"Formula {pv.value} should be invalid"
+
+            # Verify roundtrip conversion still works
             assert seq.to_proforma() == proforma
 
     def test_glycan_notation(self):
