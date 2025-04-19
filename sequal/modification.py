@@ -910,6 +910,8 @@ class ModificationValue:
                             pipe_val.is_valid_glycan = is_valid_glycan
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
+                        if self._source.upper() == "GNO" or self._source.upper() = "G":
+                            pipe_val.is_glycan = True
                         pipe_val.source = self._source
                         pipe_val.ambiguity_group = pv_parts[1]
                         # parse localization score if present
@@ -946,10 +948,15 @@ class ModificationValue:
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = self._source
                         pipe_val.is_valid_glycan = is_valid_glycan
+                    elif self._source.upper() == "GNO" or self._source.upper() = "G":
+                        pipe_val = PipeValue(parts[1], PipeValue.GAP, value)
+                        pipe_val.source = self._source
+                        pipe_val.is_valid_glycan = True
                     elif self._source.upper() == "FORMULA":
                         pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
                         pipe_val.source = self._source
                         pipe_val.is_valid_formula = is_valid_formula
+
                     else:
                         pipe_val = PipeValue(parts[1], PipeValue.SYNONYM, value)
                         pipe_val.source = self._source
@@ -1128,6 +1135,10 @@ class ModificationValue:
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = is_valid_glycan
+                    elif source.upper() == "GNO" or self._source.upper() = "G":
+                        pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
+                        pipe_val.source = source
+                        pipe_val.is_valid_glycan = True
                     elif source.upper() == "FORMULA":
                         pipe_val = PipeValue(value, PipeValue.FORMULA, component)
                         pipe_val.source = source
@@ -1139,6 +1150,8 @@ class ModificationValue:
                             pipe_val.is_valid_glycan = is_valid_glycan
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
+                        if source.upper() == "GNO" or self._source.upper() = "G":
+                            pipe_val.is_valid_glycan = True
                         pipe_val.ambiguity_group = pv_parts[1]
                         if (
                             "(" in pipe_val.ambiguity_group
@@ -1170,6 +1183,10 @@ class ModificationValue:
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = parts[0]
                         pipe_val.is_valid_glycan = is_valid_glycan
+                    elif source.upper() == "GNO" or self._source.upper() = "G":
+                        pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
+                        pipe_val.source = source
+                        pipe_val.is_valid_glycan = True
                     elif self._source.upper() == "FORMULA":
                         pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
                         pipe_val.source = parts[0]
