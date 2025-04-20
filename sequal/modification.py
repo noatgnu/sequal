@@ -177,31 +177,23 @@ class Modification(BaseBlock):
         if not formula.strip():
             return False
 
-        # Check for balanced brackets
         if formula.count("[") != formula.count("]"):
             return False
 
-        # Remove spaces for processing (allowed by spec)
         formula_no_spaces = formula.replace(" ", "")
 
-        # Process through the formula
         i = 0
         while i < len(formula_no_spaces):
-            # Handle isotopes [13C2]
             if formula_no_spaces[i] == "[":
                 end_bracket = formula_no_spaces.find("]", i)
                 if end_bracket == -1:
                     return False
 
-                # Extract isotope content
                 isotope_part = formula_no_spaces[i + 1 : end_bracket]
-                # Must start with digits followed by element
                 if not re.match(r"\d+[A-Z][a-z]?(-?\d+)?", isotope_part):
                     return False
-
                 i = end_bracket + 1
 
-                # Check for cardinality after bracket
                 if i < len(formula_no_spaces) and (
                     formula_no_spaces[i] == "-" or formula_no_spaces[i].isdigit()
                 ):
@@ -213,9 +205,7 @@ class Modification(BaseBlock):
                     if int(formula_no_spaces[start:i]) == 0:
                         return False
 
-            # Handle regular elements (C12, H, Na+)
             elif formula_no_spaces[i].isupper():
-                # Element symbol (1-2 chars)
                 if (
                     i + 1 < len(formula_no_spaces)
                     and formula_no_spaces[i + 1].islower()
@@ -224,7 +214,6 @@ class Modification(BaseBlock):
                 else:
                     i += 1
 
-                # Check for cardinality
                 if i < len(formula_no_spaces) and (
                     formula_no_spaces[i] == "-" or formula_no_spaces[i].isdigit()
                 ):
@@ -236,7 +225,6 @@ class Modification(BaseBlock):
                     if int(formula_no_spaces[start:i]) == 0:
                         return False
             else:
-                # Unexpected character
                 return False
 
         return True
@@ -244,16 +232,10 @@ class Modification(BaseBlock):
     @staticmethod
     def _validate_glycan(glycan: str) -> bool:
         """Validate a glycan string per ProForma specification."""
-        # List of supported monosaccharides
-
-        # Remove spaces for processing
         glycan_clean = glycan.replace(" ", "")
-
-        # Build pattern to match monosaccharide with optional number
         monos = list(monosaccharides)
         monos.sort(key=len, reverse=True)
         mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
-        # Check if entire string matches consecutive monosaccharide patterns
         i = 0
         while i < len(glycan_clean):
             match = re.match(mono_pattern, glycan_clean[i:])
@@ -404,8 +386,6 @@ class Modification(BaseBlock):
             return "#BRANCH"
 
         result = self._mod_value.to_string()
-
-        # Add special notations after the main value parts
         if self._crosslink_id and not self._is_crosslink_ref:
             result += f"#{self._crosslink_id}"
         if self._is_branch and not self._is_branch_ref:
@@ -440,11 +420,7 @@ class Modification(BaseBlock):
         str
             The ProForma string representation of this modification.
         """
-
-        # Start with the base value
         parts = []
-
-        # Get primary value with source prefix if present
         if self.mod_value:
             seen = set()
             for pv in self.mod_value._pipe_values:
@@ -490,7 +466,6 @@ class Modification(BaseBlock):
                 seen.add(mod_part)
 
             return "|".join(parts)
-        # If mod_value isn't available, use basic properties
         else:
             if self.mass is not None and self.value.startswith(("+", "-")):
                 return str(self.mass)
@@ -528,14 +503,8 @@ class ModificationMap:
     ):
         self.seq = seq
         self.ignore_positions = ignore_positions or set()
-
-        # Maps mod name to Modification object
         self.mod_dict_by_name: Dict[str, "Modification"] = {}
-
-        # Maps mod name to list of positions
         self.mod_position_dict: Dict[str, List[int]] = mod_position_dict or {}
-
-        # Maps position to list of modifications at that position
         self.position_to_mods: Dict[int, List["Modification"]] = defaultdict(list)
 
         self._build_mappings(mods, parse_position)
@@ -682,18 +651,13 @@ class GlobalModification(Modification):
         """
         if mod_type not in ["isotope", "fixed"]:
             raise ValueError("Global modification type must be 'isotope' or 'fixed'")
-
-        # Initialize base Modification class
-        # This will handle source parsing (MOD:, Unimod:, etc.)
         super().__init__(
             value=value,
             position=None,
-            mod_type="global",  # Use a specific mod_type to identify global mods
+            mod_type="global",
         )
         mod_value = ModificationValue(value)
         self._mod_value = mod_value
-
-        # Global mod specific attributes
         self.target_residues = target_residues
         self.global_mod_type = mod_type
 
@@ -702,14 +666,11 @@ class GlobalModification(Modification):
         if self.global_mod_type == "isotope":
             return f"<{super().to_proforma()}>"
         else:
-            # For fixed modifications with target residues
             mod_value = super().to_proforma()
-            # Format with brackets if not already present
             if not mod_value.startswith("["):
                 mod_str = f"[{mod_value}]"
             else:
                 mod_str = mod_value
-            # Join target residues with commas
             targets = ",".join(self.target_residues)
             return f"<{mod_str}@{targets}>"
 
@@ -726,8 +687,6 @@ class GlobalModification(Modification):
 
 class PipeValue:
     """Represents a single pipe-separated value in a modification."""
-
-    # Value types
     SYNONYM = "synonym"
     INFO_TAG = "info_tag"
     MASS = "mass"
@@ -742,7 +701,6 @@ class PipeValue:
     def __init__(self, value: str, value_type: str, original_value: str = None):
         self.value = value
         self._type = value_type
-        # Additional properties for special types
         self.crosslink_id = None
         self.is_branch = False
         self.is_branch_ref = False
@@ -756,7 +714,6 @@ class PipeValue:
         self.observed_mass = None
         self.is_valid_glycan = False
         self.is_valid_formula = False
-        # Extract special properties based on type
         self._extract_properties()
         self.assigned_types: List[str] = []
 
@@ -772,7 +729,6 @@ class PipeValue:
         elif self.type == self.AMBIGUITY and "#" in self.value:
             parts = self.value.split("#", 1)
             self.ambiguity_group = parts[1]
-            # Check for localization score
             if "(" in self.ambiguity_group and ")" in self.ambiguity_group:
                 score_match = re.search(r"\(([\d.]+)\)", self.ambiguity_group)
                 if score_match:
@@ -831,25 +787,18 @@ class ModificationValue:
     }
 
     def __init__(self, value: str, mass: Optional[float] = None):
-        # Core properties
         self._primary_value = ""
         self._source = None
         self._mass = mass
 
-        # Use a single collection for all pipe values
         self._pipe_values = []
-
-        # Parse the input value
         self._parse_value(value)
 
     def _parse_value(self, value: str):
         """Parse modification value with unified pipe value handling."""
         if "|" in value:
             components = value.split("|")
-            # Process primary component
             self._process_primary_value(components[0])
-
-            # Process additional pipe components
             for component in components[1:]:
                 self._process_pipe_component(component)
         else:
@@ -857,7 +806,6 @@ class ModificationValue:
 
     def _process_primary_value(self, value: str):
         """Process the primary value component."""
-        # Handle special cases first
         if value == "#BRANCH":
             self._primary_value = ""
             pipe_val = PipeValue(value, PipeValue.BRANCH, value)
@@ -906,12 +854,9 @@ class ModificationValue:
                     is_valid_formula = self._validate_formula(self._primary_value)
                 elif self._source.upper() == "GlYCAN":
                     is_valid_glycan = self._validate_glycan(self._primary_value)
-                # Handle crosslinks or ambiguity in primary value
                 if "#" in self._primary_value:
                     pv_parts = self._primary_value.split("#", 1)
                     self._primary_value = pv_parts[0]
-
-                    # Create appropriate pipe value
                     if self._source in ["XL", "XLMOD", "XL-MOD", "X"]:
                         pipe_val = PipeValue(
                             f"{self._primary_value}", PipeValue.CROSSLINK
@@ -937,7 +882,6 @@ class ModificationValue:
                             pipe_val.assign_type("glycan")
                         pipe_val.source = self._source
                         pipe_val.ambiguity_group = pv_parts[1]
-                        # parse localization score if present
                         if (
                             "(" in pipe_val.ambiguity_group
                             and ")" in pipe_val.ambiguity_group
@@ -1032,7 +976,6 @@ class ModificationValue:
                 self._primary_value = value
                 pipe_val = PipeValue(value, PipeValue.SYNONYM, value)
         else:
-            # Handle crosslink ID or ambiguity for values without source prefix
             if "#" in value:
                 parts = value.split("#", 1)
                 self._primary_value = parts[0]
@@ -1096,7 +1039,6 @@ class ModificationValue:
 
     def _process_pipe_component(self, component: str):
         """Process a single pipe-separated component."""
-        # Handle special cases first
         if component == "#BRANCH":
             pipe_val = PipeValue(component, PipeValue.BRANCH, component)
             pipe_val.is_branch_ref = True
@@ -1150,7 +1092,6 @@ class ModificationValue:
                         is_valid_formula = self._validate_formula(value)
                     elif source.upper() == "GlYCAN":
                         is_valid_glycan = self._validate_glycan(value)
-                    # Create appropriate pipe value
                     if source in ["XL", "XLMOD", "XL-MOD", "X"]:
                         pipe_val = PipeValue(value, PipeValue.CROSSLINK, component)
                         pipe_val.source = source
@@ -1235,7 +1176,6 @@ class ModificationValue:
                     pipe_val = PipeValue(parts[1], PipeValue.MASS, component)
                     pipe_val.mass = mass
 
-                    # Handle special notation in mass
                     if "#" in parts[1]:
                         pv_parts = parts[1].split("#", 1)
                         pipe_val.value = pv_parts[0]
@@ -1312,7 +1252,6 @@ class ModificationValue:
                             except ValueError:
                                 pass
 
-                # Check if base value is a mass
                 if (value.startswith("+") or value.startswith("-")) and any(
                     c.isdigit() for c in value
                 ):

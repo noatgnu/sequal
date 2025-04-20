@@ -204,7 +204,7 @@ seq = Sequence("TEN[HexNAc][HexNAc]ST")
 for i in seq.seq:
     print(i, i.mods) #should print N [HexNAc, HexNAc] on the 3rd amino acid
 
-# .mods property provides an access to all amino acids at this amino acid
+# .mods property provides access to an arrays of all modifications at this amino acid
 
 seq = Sequence("TE[HexNAc]NST", mod_position="left") #mod_position left indicate that the modification should be on the left of the amino acid instead of default which is right
 for i in seq.seq:

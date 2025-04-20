@@ -42,7 +42,6 @@ mod_enclosure_end = {")", "]", "}"}
 T = TypeVar("T", bound="BaseBlock")
 
 
-# Base sequence object for peptide or protein sequences and their fragments
 class Sequence:
     """
     Represents a sequence of amino acids or modifications.
@@ -84,7 +83,6 @@ class Sequence:
         global_mods: List[GlobalModification] = None,
         sequence_ambiguities: List[SequenceAmbiguity] = None,
     ):
-        # Initialize basic attributes
         self.encoder = encoder
         self.parser_ignore = parser_ignore or []
         self.seq: List[AminoAcid] = []
@@ -111,29 +109,24 @@ class Sequence:
 
             if parse:
                 self._parse_sequence(seq, mod_position)
-
-        # Cache sequence length for performance
         self.seq_length = len(self.seq)
 
     @classmethod
     def from_proforma(self, proforma_str):
         """Create a Sequence object from a ProForma string with multi-chain support."""
-        # Check for multi-chain notation
+
         if "//" in proforma_str:
             chains = proforma_str.split("//")
-            # Create the first chain
             main_seq = self.from_proforma(chains[0])
             main_seq.is_multi_chain = True
             main_seq.chains = [main_seq]
 
-            # Create and add additional chains
             for chain_str in chains[1:]:
                 chain = self.from_proforma(chain_str)
                 main_seq.chains.append(chain)
 
             return main_seq
         else:
-            # Parse single chain (existing implementation)
             (
                 base_sequence,
                 modifications,
@@ -146,7 +139,6 @@ class Sequence:
                 sequence_ambiguities=sequence_ambiquities,
             )
 
-            # Apply modifications
             for pos, mods in modifications.items():
                 for mod in mods:
                     if pos == -1:  # N-terminal
@@ -174,25 +166,18 @@ class Sequence:
                     and mod.range_start is not None
                     and mod.range_end is not None
                 ):
-                    # Store range info for later processing
                     ranges.append((mod.range_start, mod.range_end, mod))
         ranges.sort(key=lambda x: x[0])
         if -4 in chain.mods:
-            # Group modifications by value for caret notation
             unknown_mods_by_value = defaultdict(int)
             for mod in chain.mods[-4]:
                 unknown_mods_by_value[mod.to_proforma()] += 1
-
-            # Add unknown position modifications using caret notation where applicable
             for mod_value, count in unknown_mods_by_value.items():
                 ambiguity_str = ""
                 if count > 1:
-                    # Use caret notation for multiple occurrences
-
                     ambiguity_str += f"[{mod_value}]"
                     ambiguity_str += f"^{count}?"
                 else:
-                    # Individual notation for single occurrence
                     ambiguity_str = f"[{mod_value}]"
                     ambiguity_str += f"?"
                 result += ambiguity_str
@@ -211,9 +196,7 @@ class Sequence:
         sorted_ambiguities = sorted(self.sequence_ambiguities, key=lambda a: a.position)
         ambiguity_index = 0
 
-        # Process the sequence with ambiguities
         for i, aa in enumerate(self.seq):
-            # Check if there's an ambiguity at this position
             if (
                 ambiguity_index < len(sorted_ambiguities)
                 and sorted_ambiguities[ambiguity_index].position == i
@@ -378,11 +361,9 @@ class Sequence:
         current_mod = []
         current_position = 0
 
-        # Validate mod_position
         if mod_position not in {"left", "right"}:
             raise ValueError("mod_position must be either 'left' or 'right'")
 
-        # Parse sequence elements
         for block, is_mod in self._sequence_iterator(iter(seq)):
             if not is_mod:
                 # Handle an amino acid/residue
