@@ -741,7 +741,7 @@ class PipeValue:
 
     def __init__(self, value: str, value_type: str, original_value: str = None):
         self.value = value
-        self.type = value_type
+        self._type = value_type
         # Additional properties for special types
         self.crosslink_id = None
         self.is_branch = False
@@ -758,6 +758,7 @@ class PipeValue:
         self.is_valid_formula = False
         # Extract special properties based on type
         self._extract_properties()
+        self.assigned_types: List[str] = []
 
     def _extract_properties(self):
         """Extract special properties from the value based on type."""
@@ -782,6 +783,23 @@ class PipeValue:
 
     def __str__(self) -> str:
         return self.value
+
+    @property
+    def type(self) -> str:
+        return self._type
+
+    @type.setter
+    def type(self, value: str):
+        self._type = value
+        if len(self.assigned_types) > 0:
+            self.assigned_types[0] = value
+        else:
+            self.assign_type(value)
+
+    def assign_type(self, value: str):
+        """Assign a type to the PipeValue."""
+        if value not in self.assigned_types:
+            self.assigned_types.append(value)
 
 
 class ModificationValue:
@@ -910,10 +928,13 @@ class ModificationValue:
                         )
                         if is_valid_glycan:
                             pipe_val.is_valid_glycan = is_valid_glycan
+                            pipe_val.assign_type("glycan")
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
+                            pipe_val.assign_type("formula")
                         if self._source.upper() == "GNO" or self._source.upper() == "G":
-                            pipe_val.is_glycan = True
+                            pipe_val.is_valid_glycan = True
+                            pipe_val.assign_type("glycan")
                         pipe_val.source = self._source
                         pipe_val.ambiguity_group = pv_parts[1]
                         # parse localization score if present
@@ -958,7 +979,6 @@ class ModificationValue:
                         pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
                         pipe_val.source = self._source
                         pipe_val.is_valid_formula = is_valid_formula
-
                     else:
                         pipe_val = PipeValue(parts[1], PipeValue.SYNONYM, value)
                         pipe_val.source = self._source
@@ -977,6 +997,7 @@ class ModificationValue:
                         if pv_parts[1] == "BRANCH":
                             pipe_val.is_branch = True
                             pipe_val.type = PipeValue.BRANCH
+
                         elif pv_parts[1].startswith("XL"):
                             pipe_val.crosslink_id = pv_parts[1]
                             pipe_val.type = PipeValue.CROSSLINK
@@ -1002,7 +1023,7 @@ class ModificationValue:
                                         )
                                     except ValueError:
                                         pass
-
+                        pipe_val.assign_type(PipeValue.MASS)
                     self._pipe_values.append(pipe_val)
 
                 except ValueError:
@@ -1048,8 +1069,11 @@ class ModificationValue:
                     try:
                         self._mass = float(parts[0])
                         pipe_val.mass = self._mass
+                        pipe_val.assign_type(PipeValue.MASS)
                     except ValueError:
                         pass
+                else:
+                    pipe_val.assign_type(PipeValue.SYNONYM)
                 self._pipe_values.append(pipe_val)
             else:
                 self._primary_value = value
@@ -1152,10 +1176,13 @@ class ModificationValue:
                         pipe_val.source = source
                         if is_valid_glycan:
                             pipe_val.is_valid_glycan = is_valid_glycan
+                            pipe_val.assign_type("glycan")
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
+                            pipe_val.assign_type("formula")
                         if source.upper() == "GNO" or self._source.upper() == "G":
                             pipe_val.is_valid_glycan = True
+                            pipe_val.assign_type("glycan")
                         pipe_val.ambiguity_group = pv_parts[1]
                         if (
                             "(" in pipe_val.ambiguity_group
@@ -1240,7 +1267,7 @@ class ModificationValue:
                                         )
                                     except ValueError:
                                         pass
-
+                        pipe_val.assign_type(PipeValue.MASS)
                     self._pipe_values.append(pipe_val)
                 except ValueError:
                     self._pipe_values.append(
@@ -1291,9 +1318,11 @@ class ModificationValue:
                 ):
                     try:
                         pipe_val.mass = float(value)
+                        pipe_val.assign_type(PipeValue.MASS)
                     except ValueError:
                         pass
-
+                else:
+                    pipe_val.assign_type(PipeValue.SYNONYM)
                 self._pipe_values.append(pipe_val)
             else:
                 # Handle mass shifts
