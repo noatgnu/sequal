@@ -275,7 +275,6 @@ class TestProForma(unittest.TestCase):
         assert seq.seq[4].mods[0].mod_value.source == "GNO"
         assert seq.seq[4].mods[0].mod_value.pipe_values[0].is_valid_glycan
 
-
     def test_delta_mass_notation(self):
         """Test parsing and serialization of standard delta mass notations."""
         proforma_strings = [
