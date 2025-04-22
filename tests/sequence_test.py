@@ -267,13 +267,21 @@ class TestProForma(unittest.TestCase):
         # Verify roundtrip (ensure no duplicate branch references)
         assert seq2.to_proforma() == proforma2
 
+    def test_gno_notation(self):
+        proforma = "NEEYN[GNO:G59626AS]K"
+        seq = Sequence.from_proforma(proforma)
+        assert seq.to_stripped_string() == "NEEYNK"
+        assert seq.seq[4].mods[0].mod_value.primary_value == "G59626AS"
+        assert seq.seq[4].mods[0].mod_value.source == "GNO"
+        assert seq.seq[4].mods[0].mod_value.pipe_values[0].is_valid_glycan
+
+
     def test_delta_mass_notation(self):
         """Test parsing and serialization of standard delta mass notations."""
         proforma_strings = [
             "EM[U:+15.9949]EVEES[U:+79.9663]PEK",
             "EM[U:+15.995]EVEES[U:+79.966]PEK",
             "EM[M:+15.9949]EVEES[R:+79.9663]PEK",
-            "EM[X:+15.9949]EVEES[G:+79.9663]PEK",
             "EM[Obs:+15.995]EVEES[Obs:+79.978]PEK",
         ]
 

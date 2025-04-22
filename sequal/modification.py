@@ -423,7 +423,7 @@ class Modification(BaseBlock):
         parts = []
         if self.mod_value:
             seen = set()
-            for pv in self.mod_value._pipe_values:
+            for pv in self.mod_value.pipe_values:
                 mod_part = ""
                 if pv.source:
                     mod_part = f"{pv.source}:"
@@ -687,6 +687,7 @@ class GlobalModification(Modification):
 
 class PipeValue:
     """Represents a single pipe-separated value in a modification."""
+
     SYNONYM = "synonym"
     INFO_TAG = "info_tag"
     MASS = "mass"
@@ -1264,7 +1265,6 @@ class ModificationValue:
                     pipe_val.assign_type(PipeValue.SYNONYM)
                 self._pipe_values.append(pipe_val)
             else:
-                # Handle mass shifts
                 if (component.startswith("+") or component.startswith("-")) and any(
                     c.isdigit() for c in component
                 ):
