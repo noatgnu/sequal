@@ -134,42 +134,44 @@ class ProFormaParser:
 
         proforma_str = proforma_str[i:]
 
-        if proforma_str.startswith('['):
+        if proforma_str.startswith("["):
             bracket_level = 0
             terminator_pos = -1
 
             # Find the terminal hyphen that's outside all brackets
             for i in range(len(proforma_str)):
-                if proforma_str[i] == '[':
+                if proforma_str[i] == "[":
                     bracket_level += 1
-                elif proforma_str[i] == ']':
+                elif proforma_str[i] == "]":
                     bracket_level -= 1
-                elif proforma_str[i] == '-' and bracket_level == 0:
+                elif proforma_str[i] == "-" and bracket_level == 0:
                     terminator_pos = i
                     break
 
             if terminator_pos != -1:
                 n_terminal_part = proforma_str[:terminator_pos]
-                proforma_str = proforma_str[terminator_pos + 1:]
+                proforma_str = proforma_str[terminator_pos + 1 :]
 
                 # Parse N-terminal modifications
                 current_pos = 0
                 while current_pos < len(n_terminal_part):
-                    if n_terminal_part[current_pos] == '[':
+                    if n_terminal_part[current_pos] == "[":
                         bracket_depth = 1
                         end_pos = current_pos + 1
 
                         # Find matching closing bracket
                         while end_pos < len(n_terminal_part) and bracket_depth > 0:
-                            if n_terminal_part[end_pos] == '[':
+                            if n_terminal_part[end_pos] == "[":
                                 bracket_depth += 1
-                            if n_terminal_part[end_pos] == ']':
+                            if n_terminal_part[end_pos] == "]":
                                 bracket_depth -= 1
                             end_pos += 1
 
                         if bracket_depth == 0:
-                            mod_string = n_terminal_part[current_pos + 1:end_pos - 1]
-                            n_term_mod = ProFormaParser._create_modification(mod_string, is_terminal=True)
+                            mod_string = n_terminal_part[current_pos + 1 : end_pos - 1]
+                            n_term_mod = ProFormaParser._create_modification(
+                                mod_string, is_terminal=True
+                            )
                             modifications[-1].append(n_term_mod)
 
                         current_pos = end_pos
@@ -177,42 +179,44 @@ class ProFormaParser:
                         current_pos += 1
 
         # Check for C-terminal modifications
-        if '-' in proforma_str:
+        if "-" in proforma_str:
             bracket_level = 0
             terminator_pos = -1
 
             # Find the terminal hyphen that's outside all brackets, scanning from right to left
             for i in range(len(proforma_str) - 1, -1, -1):
-                if proforma_str[i] == ']':
+                if proforma_str[i] == "]":
                     bracket_level += 1
-                elif proforma_str[i] == '[':
+                elif proforma_str[i] == "[":
                     bracket_level -= 1
-                elif proforma_str[i] == '-' and bracket_level == 0:
+                elif proforma_str[i] == "-" and bracket_level == 0:
                     terminator_pos = i
                     break
 
             if terminator_pos != -1:
-                c_terminal_part = proforma_str[terminator_pos + 1:]
+                c_terminal_part = proforma_str[terminator_pos + 1 :]
                 proforma_str = proforma_str[:terminator_pos]
 
                 # Parse C-terminal modifications
                 current_pos = 0
                 while current_pos < len(c_terminal_part):
-                    if c_terminal_part[current_pos] == '[':
+                    if c_terminal_part[current_pos] == "[":
                         bracket_depth = 1
                         end_pos = current_pos + 1
 
                         # Find matching closing bracket
                         while end_pos < len(c_terminal_part) and bracket_depth > 0:
-                            if c_terminal_part[end_pos] == '[':
+                            if c_terminal_part[end_pos] == "[":
                                 bracket_depth += 1
-                            if c_terminal_part[end_pos] == ']':
+                            if c_terminal_part[end_pos] == "]":
                                 bracket_depth -= 1
                             end_pos += 1
 
                         if bracket_depth == 0:
-                            mod_string = c_terminal_part[current_pos + 1:end_pos - 1]
-                            c_term_mod = ProFormaParser._create_modification(mod_string, is_terminal=True)
+                            mod_string = c_terminal_part[current_pos + 1 : end_pos - 1]
+                            c_term_mod = ProFormaParser._create_modification(
+                                mod_string, is_terminal=True
+                            )
                             modifications[-2].append(c_term_mod)
 
                         current_pos = end_pos
