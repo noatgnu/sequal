@@ -120,22 +120,79 @@ class TestProForma(unittest.TestCase):
 
     def test_terminal_modifications(self):
         """Test N-terminal and C-terminal modifications."""
-        proforma = "[Acetyl]-PEPTIDE-[Amidated]"
-        seq = Sequence.from_proforma(proforma)
+        # Test single terminal modifications
+        proforma1 = "[Acetyl]-PEPTIDE-[Amidated]"
+        seq1 = Sequence.from_proforma(proforma1)
 
-        # Check sequence
-        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq1.to_stripped_string() == "PEPTIDE"
 
         # Check N-terminal modification
-        assert -1 in seq.mods
-        assert seq.mods[-1][0].value == "Acetyl"
+        n_term_mods = seq1.mods[-1]
+        assert len(n_term_mods) == 1
+        assert n_term_mods[0].mod_value.primary_value == "Acetyl"
 
         # Check C-terminal modification
-        assert -2 in seq.mods
-        assert seq.mods[-2][0].value == "Amidated"
+        c_term_mods = seq1.mods[-2]
+        assert len(c_term_mods) == 1
+        assert c_term_mods[0].mod_value.primary_value == "Amidated"
 
-        # Check roundtrip
-        assert seq.to_proforma() == proforma
+        # Test multiple terminal modifications
+        proforma2 = "[Acetyl][Methyl]-PEPTIDE-[Amidated][Phosphorylated]"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        assert seq2.to_stripped_string() == "PEPTIDE"
+
+        # Check N-terminal modifications
+        n_term_mods2 = seq2.mods[-1]
+        assert len(n_term_mods2) == 2
+        assert n_term_mods2[0].mod_value.primary_value == "Acetyl"
+        assert n_term_mods2[1].mod_value.primary_value == "Methyl"
+
+        # Check C-terminal modifications
+        c_term_mods2 = seq2.mods[-2]
+        assert len(c_term_mods2) == 2
+        assert c_term_mods2[0].mod_value.primary_value == "Amidated"
+        assert c_term_mods2[1].mod_value.primary_value == "Phosphorylated"
+
+        # Test modification names with hyphens
+        proforma3 = "[N-Terminal-Acetyl]-PEPTIDE-[C-Terminal-Amidation]"
+        seq3 = Sequence.from_proforma(proforma3)
+
+        assert seq3.to_stripped_string() == "PEPTIDE"
+
+        # Check N-terminal modification with hyphen
+        n_term_mods3 = seq3.mods[-1]
+        assert len(n_term_mods3) == 1
+        assert n_term_mods3[0].mod_value.primary_value == "N-Terminal-Acetyl"
+
+        # Check C-terminal modification with hyphen
+        c_term_mods3 = seq3.mods[-2]
+        assert len(c_term_mods3) == 1
+        assert c_term_mods3[0].mod_value.primary_value == "C-Terminal-Amidation"
+
+        # Test multiple mods with hyphens in their names
+        proforma4 = "[N-Acetyl][alpha-amino]-PEPTIDE-[C-Terminal][beta-COOH]"
+        seq4 = Sequence.from_proforma(proforma4)
+
+        assert seq4.to_stripped_string() == "PEPTIDE"
+
+        # Check N-terminal modifications with hyphens
+        n_term_mods4 = seq4.mods[-1]
+        assert len(n_term_mods4) == 2
+        assert n_term_mods4[0].mod_value.primary_value == "N-Acetyl"
+        assert n_term_mods4[1].mod_value.primary_value == "alpha-amino"
+
+        # Check C-terminal modifications with hyphens
+        c_term_mods4 = seq4.mods[-2]
+        assert len(c_term_mods4) == 2
+        assert c_term_mods4[0].mod_value.primary_value == "C-Terminal"
+        assert c_term_mods4[1].mod_value.primary_value == "beta-COOH"
+
+        # Verify roundtrip for all cases
+        assert seq1.to_proforma() == proforma1
+        assert seq2.to_proforma() == proforma2
+        assert seq3.to_proforma() == proforma3
+        assert seq4.to_proforma() == proforma4
 
     def test_ambiguous_modifications(self):
         """Test ambiguous modification locations."""
@@ -435,6 +492,7 @@ class TestProForma(unittest.TestCase):
 
             # Verify roundtrip conversion
             assert seq.to_proforma() == proforma
+            assert mod.mod_value.pipe_values[0]
 
     def test_valid_labile_modifications(self):
         # Test single labile modification
