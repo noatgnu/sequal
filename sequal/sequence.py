@@ -82,6 +82,8 @@ class Sequence:
         chains: Optional[List["Sequence"]] = None,
         global_mods: List[GlobalModification] = None,
         sequence_ambiguities: List[SequenceAmbiguity] = None,
+        charge=None,
+        ionic_species=None,
     ):
         self.encoder = encoder
         self.parser_ignore = parser_ignore or []
@@ -91,6 +93,10 @@ class Sequence:
         self.mods = defaultdict(list)
         self.global_mods = global_mods or []
         self.sequence_ambiguities = sequence_ambiguities or []
+        self.charge = charge
+        self.ionic_species = ionic_species
+        self.is_chimeric = False
+        self.peptidoforms = []
 
         if isinstance(seq, Sequence):
             for attr_name, attr_value in seq.__dict__.items():
@@ -126,32 +132,59 @@ class Sequence:
                 main_seq.chains.append(chain)
 
             return main_seq
-        else:
-            (
-                base_sequence,
-                modifications,
-                global_mods,
-                sequence_ambiquities,
-            ) = ProFormaParser.parse(proforma_str)
-            seq = self(
-                base_sequence,
-                global_mods=global_mods,
-                sequence_ambiguities=sequence_ambiquities,
-            )
 
-            for pos, mods in modifications.items():
-                for mod in mods:
-                    if pos == -1:  # N-terminal
-                        seq.mods[-1].append(mod)
-                    elif pos == -2:  # C-terminal
-                        seq.mods[-2].append(mod)
-                    elif pos == -3:
-                        seq.mods[-3].append(mod)
-                    elif pos == -4:
-                        seq.mods[-4].append(mod)
-                    else:
-                        seq.seq[pos].add_modification(mod)
-            return seq
+        peptidoforms = split_chimeric_proforma(proforma_str)
+
+        if len(peptidoforms) > 1:
+            # First peptidoform becomes the main sequence
+            main_seq = self.from_proforma(peptidoforms[0])
+
+            # Initialize chimeric properties if not already present
+            main_seq.is_chimeric = True
+
+            main_seq.peptidoforms = [main_seq]
+
+            # Parse remaining peptidoforms
+            for peptidoform_str in peptidoforms[1:]:
+                peptidoform = self.from_proforma(peptidoform_str)
+                peptidoform.is_chimeric = True
+                main_seq.peptidoforms.append(peptidoform)
+
+            return main_seq
+
+        (
+            base_sequence,
+            modifications,
+            global_mods,
+            sequence_ambiquities,
+            charge_info,
+        ) = ProFormaParser.parse(proforma_str)
+        charge = None
+        ionic_species = None
+        if charge_info:
+            charge = charge_info[0]
+            if len(charge_info) > 1:
+                ionic_species = charge_info[1]
+        seq = self(
+            base_sequence,
+            global_mods=global_mods,
+            sequence_ambiguities=sequence_ambiquities,
+            charge=charge,
+            ionic_species=ionic_species,
+        )
+        for pos, mods in modifications.items():
+            for mod in mods:
+                if pos == -1:  # N-terminal
+                    seq.mods[-1].append(mod)
+                elif pos == -2:  # C-terminal
+                    seq.mods[-2].append(mod)
+                elif pos == -3:
+                    seq.mods[-3].append(mod)
+                elif pos == -4:
+                    seq.mods[-4].append(mod)
+                else:
+                    seq.seq[pos].add_modification(mod)
+        return seq
 
     def _chain_to_proforma(self, chain):
         result = ""
@@ -255,7 +288,10 @@ class Sequence:
                 n_mod_str += mod_str
             if n_mod_str:
                 result += "-" + n_mod_str
-
+        if chain.charge:
+            result += f"/{chain.charge}"
+            if chain.ionic_species:
+                result += f"[{chain.ionic_species}]"
         return result
 
     def _add_info_tags(self, result, mod):
@@ -274,7 +310,6 @@ class Sequence:
         str
             The updated result string with info tags.
         """
-        print(result)
         info_str = ""
         added_info = set()
         stripped_result = result.lstrip("[")
@@ -347,7 +382,13 @@ class Sequence:
             result = "//".join(self._chain_to_proforma(chain) for chain in self.chains)
             return result
         else:
-            return self._chain_to_proforma(self)
+            if hasattr(self, "is_chimeric") and self.is_chimeric:
+                result = "+".join(
+                    self._chain_to_proforma(peptide) for peptide in self.peptidoforms
+                )
+                return result
+            else:
+                return self._chain_to_proforma(self)
 
     def _parse_sequence(self, seq: Union[str, List], mod_position: str) -> None:
         """
@@ -1077,3 +1118,38 @@ class ModdedSequenceGenerator:
 
             # Recursively continue with next modification
             yield from self._explore_scenarios(current_mod_idx + 1, scenario_copy)
+
+
+def split_chimeric_proforma(proforma_str: str) -> List[str]:
+    """
+    Splits a ProForma string representing multiple chimeric assignments
+    into individual peptidoform strings.
+
+    The split occurs at '+' characters that are not enclosed within any
+    type of brackets ('[]', '()', '{}'). This ensures that '+' signs
+    within modification tags or ionic species definitions are ignored.
+
+    Args:
+        proforma_str: The input ProForma string, potentially containing
+                      multiple assignments separated by '+'.
+
+    Returns:
+        A list of strings, where each string is a ProForma representation
+        of a single peptidoform assignment. Returns a list containing
+        the original string if no valid '+' separator is found.
+    """
+    parts: List[str] = []
+    current_part_start: int = 0
+    bracket_level: int = 0
+
+    for i, char in enumerate(proforma_str):
+        if char in "[{(":
+            bracket_level += 1
+        elif char in "]})":
+            bracket_level = max(0, bracket_level - 1)
+        elif char == "+" and bracket_level == 0:
+            parts.append(proforma_str[current_part_start:i].strip())
+            current_part_start = i + 1
+
+    parts.append(proforma_str[current_part_start:].strip())
+    return [part for part in parts if part]

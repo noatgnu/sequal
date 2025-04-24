@@ -18,9 +18,18 @@ class ProFormaParser:
     BRANCH_PATTERN = re.compile(r"^([^#]+)#BRANCH$")
     BRANCH_REF_PATTERN = re.compile(r"^#BRANCH$")
     UNKNOWN_POSITION_PATTERN = re.compile(r"(\[([^\]]+)\])(\^(\d+))?(\?)")
+    CHARGE_PATTERN = re.compile(r"/(-?\d+)(?:\[(.*?)\])?(?=-|\Z)")
 
     @staticmethod
-    def parse(proforma_str: str) -> Tuple[str, Dict[int, List[Modification]]]:
+    def parse(
+        proforma_str: str,
+    ) -> Tuple[
+        str,
+        Dict[int, List[Modification]],
+        List[GlobalModification],
+        List["SequenceAmbiguity"],
+        Optional[Tuple[int, str]],
+    ]:
         """
         Parse a ProForma string into a base sequence and modifications.
 
@@ -177,6 +186,8 @@ class ProFormaParser:
                         current_pos = end_pos
                     else:
                         current_pos += 1
+
+        proforma_str, charge, species = ProFormaParser.parse_charge_info(proforma_str)
 
         # Check for C-terminal modifications
         if "-" in proforma_str:
@@ -369,7 +380,93 @@ class ProFormaParser:
                     next_mod_is_gap = True
                 i += 1
 
-        return base_sequence, modifications, global_mods, sequence_ambiguities
+        return (
+            base_sequence,
+            modifications,
+            global_mods,
+            sequence_ambiguities,
+            (charge, species),
+        )
+
+    @staticmethod
+    def parse_charge_info(proforma_str):
+        """
+        Parse charge information from a ProForma string without using regex.
+
+        Parameters
+        ----------
+        proforma_str : str
+            The ProForma string to parse
+
+        Returns
+        -------
+        tuple
+            (updated_proforma_str, charge_value, ionic_species)
+        """
+        if "/" not in proforma_str:
+            return proforma_str, None, None
+
+        charge_pos = -1
+        bracket_level = 0
+
+        for i, char in enumerate(proforma_str):
+            if char in "[(":
+                bracket_level += 1
+            elif char in "])":
+                bracket_level -= 1
+            elif char == "/" and bracket_level == 0:
+                charge_pos = i
+                break
+
+        if charge_pos == -1:
+            return proforma_str, None, None
+
+        before_charge = proforma_str[:charge_pos]
+        after_charge = proforma_str[charge_pos + 1 :]
+
+        i = 0
+        sign = 1
+
+        if i < len(after_charge) and after_charge[i] == "-":
+            sign = -1
+            i += 1
+
+        start_digit = i
+        while i < len(after_charge) and after_charge[i].isdigit():
+            i += 1
+
+        if start_digit == i:
+            return proforma_str, None, None
+
+        charge_value = int(after_charge[start_digit:i]) * sign
+
+        remaining = after_charge[i:]
+        ionic_species = None
+
+        if remaining and remaining[0] == "[":
+            # Find the matching closing bracket
+            bracket_level = 1
+            end_pos = 0
+
+            for j, char in enumerate(remaining[1:], 1):
+                if char == "[":
+                    bracket_level += 1
+                elif char == "]":
+                    bracket_level -= 1
+
+                if bracket_level == 0:
+                    end_pos = j
+                    break
+
+            if end_pos > 0:
+                ionic_species = remaining[1:end_pos]
+                remaining = remaining[end_pos + 1 :]
+
+        result_str = before_charge
+        if remaining:
+            result_str += remaining
+
+        return result_str, charge_value, ionic_species
 
     @staticmethod
     def _create_modification(

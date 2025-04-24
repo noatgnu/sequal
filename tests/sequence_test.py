@@ -1,7 +1,7 @@
 import unittest
 
 from sequal.modification import Modification
-from sequal.sequence import ModdedSequenceGenerator, Sequence
+from sequal.sequence import ModdedSequenceGenerator, Sequence, split_chimeric_proforma
 
 nsequon = Modification(
     "HexNAc", regex_pattern="N[^P][S|T]", mod_type="variable", labile=True
@@ -1147,6 +1147,180 @@ class TestProForma(unittest.TestCase):
 
         # When converted back, duplicates should be removed
         assert seq.to_proforma() == "PEPT[Phospho|+79.966|Obs:+79.968]IDE"
+
+    def test_charge_representation(self):
+        """Test parsing and roundtrip of charge representation."""
+        # Test basic positive charge
+        proforma1 = "EMEVEESPEK/2"
+        seq1 = Sequence.from_proforma(proforma1)
+
+        assert seq1.to_stripped_string() == "EMEVEESPEK"
+        assert seq1.charge == 2
+        assert seq1.ionic_species is None
+        assert seq1.to_proforma() == proforma1
+
+        # Test negative charge
+        proforma2 = "EMEVEESPEK/-2"
+        seq2 = Sequence.from_proforma(proforma2)
+
+        assert seq2.to_stripped_string() == "EMEVEESPEK"
+        assert seq2.charge == -2
+        assert seq2.ionic_species is None
+        assert seq2.to_proforma() == proforma2
+
+        # Test with ionic species
+        proforma3 = "EMEVEESPEK/2[+2Na+,+H+]"
+        seq3 = Sequence.from_proforma(proforma3)
+
+        assert seq3.to_stripped_string() == "EMEVEESPEK"
+        assert seq3.charge == 2
+        assert seq3.ionic_species == "+2Na+,+H+"
+        assert seq3.to_proforma() == proforma3
+
+        # Test with modifications and charge
+        proforma4 = "EM[U:Oxidation]EVEES[U:Phospho]PEK/3"
+        seq4 = Sequence.from_proforma(proforma4)
+
+        assert seq4.to_stripped_string() == "EMEVEESPEK"
+        assert seq4.charge == 3
+        assert seq4.seq[1].mods[0].value == "Oxidation"
+        assert seq4.seq[6].mods[0].value == "Phospho"
+        assert seq4.to_proforma() == proforma4
+
+        # Test with complex structure
+        proforma5 = "<[Carbamidomethyl]@C>[Acetyl]-PEPTCDE-[Amidated]/1[+Na+]"
+        seq5 = Sequence.from_proforma(proforma5)
+
+        assert seq5.to_stripped_string() == "PEPTCDE"
+        assert seq5.charge == 1
+        assert seq5.ionic_species == "+Na+"
+        assert seq5.to_proforma() == proforma5
+        proforma6 = "<[Carbamidomethyl]@C>[Acetyl]-PEPTCDE-[Amidated]/1[+2Na+,-H+]"
+        seq6 = Sequence.from_proforma(proforma6)
+
+        assert seq6.to_stripped_string() == "PEPTCDE"
+        assert seq6.charge == 1
+        assert seq6.ionic_species == "+2Na+,-H+"
+        assert seq6.to_proforma() == proforma6
+
+    def test_split_chimeric_proforma_basic(self):
+        """Test basic splitting of chimeric ProForma strings."""
+        input_str = "EMEVEESPEK/2+ELVISLIVER/3"
+        result = split_chimeric_proforma(input_str)
+        assert result == ["EMEVEESPEK/2", "ELVISLIVER/3"]
+
+    def test_split_chimeric_proforma_with_modifications(self):
+        """Test splitting with modifications including '+' in brackets."""
+        input_str = "S[+79.966]EQMENPEK/2+ELVISLIVER/3"
+        result = split_chimeric_proforma(input_str)
+        assert result == ["S[+79.966]EQMENPEK/2", "ELVISLIVER/3"]
+
+    def test_split_chimeric_proforma_ionic_species(self):
+        """Test splitting with ionic species containing '+' character."""
+        input_str = "PEPTIDE/1[+Na+]+OTHERSEQ/2"
+        result = split_chimeric_proforma(input_str)
+        assert result == ["PEPTIDE/1[+Na+]", "OTHERSEQ/2"]
+
+    def test_split_chimeric_proforma_terminal_mods(self):
+        """Test splitting with terminal modifications."""
+        input_str = "[Acetyl]-PEPTIDE-[Amidated]/1+OTHERSEQ/2"
+        result = split_chimeric_proforma(input_str)
+        assert result == ["[Acetyl]-PEPTIDE-[Amidated]/1", "OTHERSEQ/2"]
+
+    def test_split_chimeric_proforma_complex_brackets(self):
+        """Test splitting with complex nested brackets."""
+        input_str = "PEPT[+Phospho (something [special])]-[Amidated]/2+OTHERSEQ/3"
+        result = split_chimeric_proforma(input_str)
+        assert result == [
+            "PEPT[+Phospho (something [special])]-[Amidated]/2",
+            "OTHERSEQ/3",
+        ]
+
+    def test_split_chimeric_proforma_multiple_peptidoforms(self):
+        """Test splitting with more than two peptidoforms."""
+        input_str = "SEQ1/1+SEQ2/2+SEQ3/3"
+        result = split_chimeric_proforma(input_str)
+        assert result == ["SEQ1/1", "SEQ2/2", "SEQ3/3"]
+
+    def test_from_proforma_basic_chimeric(self):
+        """Test parsing basic chimeric ProForma string."""
+        input_str = "PEPTIDE/2+ANOTHER/3"
+        seq = Sequence.from_proforma(input_str)
+
+        # Check basic properties
+        assert seq.is_chimeric
+        assert len(seq.peptidoforms) == 2
+
+        # Check first peptidoform
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.charge == 2
+
+        # Check second peptidoform
+        assert seq.peptidoforms[1].to_stripped_string() == "ANOTHER"
+        assert seq.peptidoforms[1].charge == 3
+
+    def test_from_proforma_complex_chimeric(self):
+        """Test parsing complex chimeric ProForma string with modifications."""
+        input_str = "[Acetyl]-PEP[+79.966]TIDE-[Amidated]/2[+Na+]+S[Phospho]EQ/3"
+        seq = Sequence.from_proforma(input_str)
+
+        # Check chimeric properties
+        assert seq.is_chimeric
+        assert len(seq.peptidoforms) == 2
+
+        # First peptidoform specifics
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.charge == 2
+        assert seq.ionic_species == "+Na+"
+        assert len(seq.mods[-1]) > 0  # N-terminal mod
+        assert len(seq.mods[-2]) > 0  # C-terminal mod
+
+        # Second peptidoform specifics
+        second = seq.peptidoforms[1]
+        assert second.to_stripped_string() == "SEQ"
+        assert second.charge == 3
+        assert len(second.seq[0].mods) > 0  # S has phospho mod
+
+    def test_to_proforma_chimeric(self):
+        """Test round-trip conversion of chimeric ProForma strings."""
+        # Note: exact string comparison may be challenging due to canonical formatting
+        # differences, so we test by parsing the result again
+
+        input_str = "PEPTIDE/2+ANOTHER/3"
+        seq = Sequence.from_proforma(input_str)
+
+        # Generate ProForma string and parse again
+        proforma = seq.to_proforma()
+        parsed_again = Sequence.from_proforma(proforma)
+
+        # Check key properties match
+        assert parsed_again.is_chimeric
+        assert len(parsed_again.peptidoforms) == 2
+        assert parsed_again.to_stripped_string() == "PEPTIDE"
+        assert parsed_again.charge == 2
+        assert parsed_again.peptidoforms[1].to_stripped_string() == "ANOTHER"
+        assert parsed_again.peptidoforms[1].charge == 3
+
+    def test_multi_chain_with_chimeric(self):
+        """Test interaction between multi-chain and chimeric features."""
+        input_str = "PEP/1+QRS/2//QWR/3+AAC/4"
+        seq = Sequence.from_proforma(input_str)
+
+        # Check multi-chain properties
+        assert seq.is_multi_chain
+        assert len(seq.chains) == 2
+
+        # Check first chain is chimeric
+        assert seq.chains[0].is_chimeric
+        assert len(seq.chains[0].peptidoforms) == 2
+        assert seq.chains[0].to_stripped_string() == "PEP"
+        assert seq.chains[0].peptidoforms[1].to_stripped_string() == "QRS"
+
+        # Check second chain is chimeric
+        assert seq.chains[1].is_chimeric
+        assert len(seq.chains[1].peptidoforms) == 2
+        assert seq.chains[1].to_stripped_string() == "QWR"
+        assert seq.chains[1].peptidoforms[1].to_stripped_string() == "AAC"
 
 
 if __name__ == "__main__":
