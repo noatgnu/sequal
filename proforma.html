@@ -1,0 +1,233 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>proforma &mdash; sequal 2.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=20623aea"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="resources" href="resources.html" />
+    <link rel="prev" title="modification" href="modification.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sequal
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="amino_acid.html">amino_acid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_block.html">base_block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ion.html">ion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mass.html">mass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mass_spectrometry.html">mass_spectrometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modification.html">modification</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">proforma</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.proforma.ProFormaParser"><code class="docutils literal notranslate"><span class="pre">ProFormaParser</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.BRANCH_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.BRANCH_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.BRANCH_REF_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.BRANCH_REF_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.CHARGE_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.CHARGE_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.CROSSLINK_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.CROSSLINK_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.CROSSLINK_REF_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.CROSSLINK_REF_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.C_TERMINAL_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.C_TERMINAL_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.MASS_SHIFT_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.MASS_SHIFT_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.N_TERMINAL_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.N_TERMINAL_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.TERMINAL_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.TERMINAL_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.UNKNOWN_POSITION_PATTERN"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.UNKNOWN_POSITION_PATTERN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.parse"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.parse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.proforma.ProFormaParser.parse_charge_info"><code class="docutils literal notranslate"><span class="pre">ProFormaParser.parse_charge_info()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.proforma.SequenceAmbiguity"><code class="docutils literal notranslate"><span class="pre">SequenceAmbiguity</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sequence.html">sequence</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sequal</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">proforma</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/proforma.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-sequal.proforma">
+<span id="proforma"></span><h1>proforma<a class="headerlink" href="#module-sequal.proforma" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.proforma.</span></span><span class="sig-name descname"><span class="pre">ProFormaParser</span></span><a class="reference internal" href="_modules/sequal/proforma.html#ProFormaParser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.proforma.ProFormaParser" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Parser for the ProForma peptide notation format.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.BRANCH_PATTERN">
+<span class="sig-name descname"><span class="pre">BRANCH_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^([^#]+)#BRANCH$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.BRANCH_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.BRANCH_REF_PATTERN">
+<span class="sig-name descname"><span class="pre">BRANCH_REF_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^#BRANCH$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.BRANCH_REF_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.CHARGE_PATTERN">
+<span class="sig-name descname"><span class="pre">CHARGE_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('/(-?\\d+)(?:\\[(.*?)\\])?(?=-|\\Z)')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.CHARGE_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.CROSSLINK_PATTERN">
+<span class="sig-name descname"><span class="pre">CROSSLINK_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^([^#]+)#(XL[A-Za-z0-9]+)$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.CROSSLINK_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.CROSSLINK_REF_PATTERN">
+<span class="sig-name descname"><span class="pre">CROSSLINK_REF_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^#(XL[A-Za-z0-9]+)$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.CROSSLINK_REF_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.C_TERMINAL_PATTERN">
+<span class="sig-name descname"><span class="pre">C_TERMINAL_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^(.+)-\\[([^\\]]+)\\]$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.C_TERMINAL_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.MASS_SHIFT_PATTERN">
+<span class="sig-name descname"><span class="pre">MASS_SHIFT_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^[+-]\\d+(\\.\\d+)?$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.MASS_SHIFT_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.N_TERMINAL_PATTERN">
+<span class="sig-name descname"><span class="pre">N_TERMINAL_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^\\[([^\\]]+)\\]-(.+)$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.N_TERMINAL_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.TERMINAL_PATTERN">
+<span class="sig-name descname"><span class="pre">TERMINAL_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('^\\[([^\\]]+)\\]-(.+)-\\[([^\\]]+)\\]$')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.TERMINAL_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.UNKNOWN_POSITION_PATTERN">
+<span class="sig-name descname"><span class="pre">UNKNOWN_POSITION_PATTERN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">re.compile('(\\[([^\\]]+)\\])(\\^(\\d+))?(\\?)')</span></em><a class="headerlink" href="#sequal.proforma.ProFormaParser.UNKNOWN_POSITION_PATTERN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.parse">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proforma_str</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification"><span class="pre">Modification</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="modification.html#sequal.modification.GlobalModification" title="sequal.modification.GlobalModification"><span class="pre">GlobalModification</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#sequal.proforma.SequenceAmbiguity" title="sequal.proforma.SequenceAmbiguity"><span class="pre">SequenceAmbiguity</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/proforma.html#ProFormaParser.parse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.proforma.ProFormaParser.parse" title="Link to this definition"></a></dt>
+<dd><p>Parse a ProForma string into a base sequence and modifications.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>proforma_str</strong> (<em>str</em>) – ProForma formatted peptide string</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Base sequence and modifications dictionary</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple[str, Dict[int, List[<a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification">Modification</a>]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.proforma.ProFormaParser.parse_charge_info">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parse_charge_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proforma_str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/proforma.html#ProFormaParser.parse_charge_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.proforma.ProFormaParser.parse_charge_info" title="Link to this definition"></a></dt>
+<dd><p>Parse charge information from a ProForma string without using regex.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>proforma_str</strong> (<em>str</em>) – The ProForma string to parse</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>(updated_proforma_str, charge_value, ionic_species)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.proforma.SequenceAmbiguity">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.proforma.</span></span><span class="sig-name descname"><span class="pre">SequenceAmbiguity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/proforma.html#SequenceAmbiguity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.proforma.SequenceAmbiguity" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents ambiguity in the amino acid sequence.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modification.html" class="btn btn-neutral float-left" title="modification" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="resources.html" class="btn btn-neutral float-right" title="resources" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Toan K. Phung.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

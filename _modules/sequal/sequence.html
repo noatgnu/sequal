@@ -1,0 +1,1349 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sequal.sequence &mdash; sequal 2.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=20623aea"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            sequal
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../amino_acid.html">amino_acid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../base_block.html">base_block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ion.html">ion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mass.html">mass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mass_spectrometry.html">mass_spectrometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modification.html">modification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../proforma.html">proforma</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resources.html">resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sequence.html">sequence</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">sequal</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sequal.sequence</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sequal.sequence</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">This module provides the Sequence class for handling peptide or protein sequences and their fragments.</span>
+
+<span class="sd">Classes:</span>
+<span class="sd">    Sequence: Represents a sequence of amino acids or modifications.</span>
+<span class="sd">    ModdedSequenceGenerator: Generates modified sequences based on static and variable modifications.</span>
+
+<span class="sd">Functions:</span>
+<span class="sd">    count_unique_elements(seq): Counts unique elements in a sequence.</span>
+<span class="sd">    variable_position_placement_generator(positions): Generates different position combinations for modifications.</span>
+<span class="sd">    ordered_serialize_position_dict(positions): Serializes a dictionary of positions in an ordered manner.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">copy</span><span class="w"> </span><span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">Generic</span><span class="p">,</span>
+    <span class="n">Iterable</span><span class="p">,</span>
+    <span class="n">Iterator</span><span class="p">,</span>
+    <span class="n">List</span><span class="p">,</span>
+    <span class="n">Optional</span><span class="p">,</span>
+    <span class="n">Set</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+    <span class="n">Type</span><span class="p">,</span>
+    <span class="n">TypeVar</span><span class="p">,</span>
+    <span class="n">Union</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sequal.amino_acid</span><span class="w"> </span><span class="kn">import</span> <span class="n">AminoAcid</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sequal.base_block</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseBlock</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sequal.modification</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalModification</span><span class="p">,</span> <span class="n">Modification</span><span class="p">,</span> <span class="n">ModificationMap</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sequal.proforma</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProFormaParser</span><span class="p">,</span> <span class="n">SequenceAmbiguity</span>
+
+<span class="n">mod_pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[\(|\[]+([^\)]+)[\)|\]]+&quot;</span><span class="p">)</span>
+<span class="n">mod_enclosure_start</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;(&quot;</span><span class="p">,</span> <span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;{&quot;</span><span class="p">}</span>
+<span class="n">mod_enclosure_end</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;)&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;}&quot;</span><span class="p">}</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;BaseBlock&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Sequence">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sequence</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents a sequence of amino acids or modifications.</span>
+
+<span class="sd">    This class provides methods for building, modifying, and analyzing sequences</span>
+<span class="sd">    of biochemical blocks such as amino acids with their modifications.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    seq : Union[str, List, &#39;Sequence&#39;]</span>
+<span class="sd">        A string, list of strings, or list of AminoAcid objects. The parser will</span>
+<span class="sd">        recursively parse each element to identify amino acids and modifications.</span>
+<span class="sd">    encoder : Type[BaseBlock], optional</span>
+<span class="sd">        Class for encoding sequence elements, default is AminoAcid.</span>
+<span class="sd">    mods : Optional[Dict[int, Union[Modification, List[Modification]]]], optional</span>
+<span class="sd">        Dictionary mapping positions to modifications at those positions.</span>
+<span class="sd">    parse : bool, optional</span>
+<span class="sd">        Whether to parse the sequence, default is True.</span>
+<span class="sd">    parser_ignore : Optional[List[str]], optional</span>
+<span class="sd">        List of elements to ignore during parsing.</span>
+<span class="sd">    mod_position : str, optional</span>
+<span class="sd">        Indicates the position of modifications relative to their residue (&quot;left&quot; or &quot;right&quot;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Regular expression patterns for parsing</span>
+    <span class="n">_MOD_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[\(|\[]+([^\)]+)[\)|\]]+&quot;</span><span class="p">)</span>
+    <span class="n">_MOD_ENCLOSURE_START</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;(&quot;</span><span class="p">,</span> <span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;{&quot;</span><span class="p">}</span>
+    <span class="n">_MOD_ENCLOSURE_END</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;)&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="s2">&quot;}&quot;</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">seq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="s2">&quot;Sequence&quot;</span><span class="p">],</span>
+        <span class="n">encoder</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseBlock</span><span class="p">]</span> <span class="o">=</span> <span class="n">AminoAcid</span><span class="p">,</span>
+        <span class="n">mods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">Modification</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">parse</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">parser_ignore</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mod_position</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;right&quot;</span><span class="p">,</span>
+        <span class="n">chains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="s2">&quot;Sequence&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">global_mods</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GlobalModification</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">sequence_ambiguities</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">SequenceAmbiguity</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">charge</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ionic_species</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">peptidoform_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">peptidoform_ion_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">compound_ion_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parser_ignore</span> <span class="o">=</span> <span class="n">parser_ignore</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AminoAcid</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chains</span> <span class="o">=</span> <span class="n">chains</span> <span class="ow">or</span> <span class="p">[</span><span class="bp">self</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_multi_chain</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mods</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">global_mods</span> <span class="o">=</span> <span class="n">global_mods</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sequence_ambiguities</span> <span class="o">=</span> <span class="n">sequence_ambiguities</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">charge</span> <span class="o">=</span> <span class="n">charge</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ionic_species</span> <span class="o">=</span> <span class="n">ionic_species</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peptidoform_name</span> <span class="o">=</span> <span class="n">peptidoform_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peptidoform_ion_name</span> <span class="o">=</span> <span class="n">peptidoform_ion_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">compound_ion_name</span> <span class="o">=</span> <span class="n">compound_ion_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_chimeric</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peptidoforms</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">attr_value</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">attr_name</span> <span class="o">!=</span> <span class="s2">&quot;mods&quot;</span><span class="p">:</span>
+                    <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">attr_value</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="s2">&quot;mods&quot;</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">mod_list</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">mods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mod_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">mods</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">mod_items</span> <span class="ow">in</span> <span class="n">mods</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mod_items</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">mod_items</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod_items</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">parse</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_parse_sequence</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">mod_position</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Sequence.from_proforma">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.from_proforma">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_proforma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proforma_str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Sequence object from a ProForma string with multi-chain support.&quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="s2">&quot;//&quot;</span> <span class="ow">in</span> <span class="n">proforma_str</span><span class="p">:</span>
+            <span class="n">chains</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;//&quot;</span><span class="p">)</span>
+            <span class="n">main_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_proforma</span><span class="p">(</span><span class="n">chains</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">main_seq</span><span class="o">.</span><span class="n">is_multi_chain</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">main_seq</span><span class="o">.</span><span class="n">chains</span> <span class="o">=</span> <span class="p">[</span><span class="n">main_seq</span><span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">chain_str</span> <span class="ow">in</span> <span class="n">chains</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="n">chain</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_proforma</span><span class="p">(</span><span class="n">chain_str</span><span class="p">)</span>
+                <span class="n">main_seq</span><span class="o">.</span><span class="n">chains</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chain</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">main_seq</span>
+
+        <span class="n">peptidoforms</span> <span class="o">=</span> <span class="n">split_chimeric_proforma</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">peptidoforms</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># First peptidoform becomes the main sequence</span>
+            <span class="n">main_seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_proforma</span><span class="p">(</span><span class="n">peptidoforms</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+            <span class="c1"># Initialize chimeric properties if not already present</span>
+            <span class="n">main_seq</span><span class="o">.</span><span class="n">is_chimeric</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="n">main_seq</span><span class="o">.</span><span class="n">peptidoforms</span> <span class="o">=</span> <span class="p">[</span><span class="n">main_seq</span><span class="p">]</span>
+
+            <span class="c1"># Parse remaining peptidoforms</span>
+            <span class="k">for</span> <span class="n">peptidoform_str</span> <span class="ow">in</span> <span class="n">peptidoforms</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="n">peptidoform</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">from_proforma</span><span class="p">(</span><span class="n">peptidoform_str</span><span class="p">)</span>
+                <span class="n">peptidoform</span><span class="o">.</span><span class="n">is_chimeric</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">main_seq</span><span class="o">.</span><span class="n">peptidoforms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">peptidoform</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">main_seq</span>
+
+        <span class="n">parse_result</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parse_result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">5</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="n">base_sequence</span><span class="p">,</span>
+                <span class="n">modifications</span><span class="p">,</span>
+                <span class="n">global_mods</span><span class="p">,</span>
+                <span class="n">sequence_ambiquities</span><span class="p">,</span>
+                <span class="n">charge_info</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">=</span> <span class="n">parse_result</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="p">(</span>
+                <span class="n">base_sequence</span><span class="p">,</span>
+                <span class="n">modifications</span><span class="p">,</span>
+                <span class="n">global_mods</span><span class="p">,</span>
+                <span class="n">sequence_ambiquities</span><span class="p">,</span>
+                <span class="n">charge_info</span><span class="p">,</span>
+                <span class="n">names</span><span class="p">,</span>
+            <span class="p">)</span> <span class="o">=</span> <span class="n">parse_result</span>
+
+        <span class="n">charge</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">ionic_species</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">charge_info</span><span class="p">:</span>
+            <span class="n">charge</span> <span class="o">=</span> <span class="n">charge_info</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">charge_info</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">ionic_species</span> <span class="o">=</span> <span class="n">charge_info</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="n">seq</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span>
+            <span class="n">base_sequence</span><span class="p">,</span>
+            <span class="n">global_mods</span><span class="o">=</span><span class="n">global_mods</span><span class="p">,</span>
+            <span class="n">sequence_ambiguities</span><span class="o">=</span><span class="n">sequence_ambiquities</span><span class="p">,</span>
+            <span class="n">charge</span><span class="o">=</span><span class="n">charge</span><span class="p">,</span>
+            <span class="n">ionic_species</span><span class="o">=</span><span class="n">ionic_species</span><span class="p">,</span>
+            <span class="n">peptidoform_name</span><span class="o">=</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;peptidoform_name&quot;</span><span class="p">),</span>
+            <span class="n">peptidoform_ion_name</span><span class="o">=</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;peptidoform_ion_name&quot;</span><span class="p">),</span>
+            <span class="n">compound_ion_name</span><span class="o">=</span><span class="n">names</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;compound_ion_name&quot;</span><span class="p">),</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">mods</span> <span class="ow">in</span> <span class="n">modifications</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">mods</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>  <span class="c1"># N-terminal</span>
+                    <span class="n">seq</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span>  <span class="c1"># C-terminal</span>
+                    <span class="n">seq</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">3</span><span class="p">:</span>
+                    <span class="n">seq</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">4</span><span class="p">:</span>
+                    <span class="n">seq</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">seq</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">seq</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_chain_to_proforma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chain</span><span class="p">):</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="s2">&quot;compound_ion_name&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">chain</span><span class="o">.</span><span class="n">compound_ion_name</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(&gt;&gt;&gt;</span><span class="si">{</span><span class="n">chain</span><span class="o">.</span><span class="n">compound_ion_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="s2">&quot;peptidoform_ion_name&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">chain</span><span class="o">.</span><span class="n">peptidoform_ion_name</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(&gt;&gt;</span><span class="si">{</span><span class="n">chain</span><span class="o">.</span><span class="n">peptidoform_ion_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">chain</span><span class="p">,</span> <span class="s2">&quot;peptidoform_name&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">chain</span><span class="o">.</span><span class="n">peptidoform_name</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(&gt;</span><span class="si">{</span><span class="n">chain</span><span class="o">.</span><span class="n">peptidoform_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_mods</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()</span>
+
+        <span class="n">ranges</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aa</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">mod</span><span class="o">.</span><span class="n">in_range</span>
+                    <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">range_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">range_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="p">):</span>
+                    <span class="n">ranges</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">mod</span><span class="o">.</span><span class="n">range_start</span><span class="p">,</span> <span class="n">mod</span><span class="o">.</span><span class="n">range_end</span><span class="p">,</span> <span class="n">mod</span><span class="p">))</span>
+        <span class="n">ranges</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">if</span> <span class="o">-</span><span class="mi">4</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="n">unknown_mods_by_value</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">]:</span>
+                <span class="n">unknown_mods_by_value</span><span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">for</span> <span class="n">mod_value</span><span class="p">,</span> <span class="n">count</span> <span class="ow">in</span> <span class="n">unknown_mods_by_value</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">ambiguity_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="k">if</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">ambiguity_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">mod_value</span><span class="si">}</span><span class="s2">]&quot;</span>
+                    <span class="n">ambiguity_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;^</span><span class="si">{</span><span class="n">count</span><span class="si">}</span><span class="s2">?&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">ambiguity_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">mod_value</span><span class="si">}</span><span class="s2">]&quot;</span>
+                    <span class="n">ambiguity_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;?&quot;</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="n">ambiguity_str</span>
+        <span class="k">if</span> <span class="o">-</span><span class="mi">3</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">mod_type</span> <span class="o">==</span> <span class="s2">&quot;labile&quot;</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="n">n_mod_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()</span><span class="si">}</span><span class="s2">]&quot;</span>
+                <span class="n">n_mod_str</span> <span class="o">+=</span> <span class="n">mod_str</span>
+            <span class="k">if</span> <span class="n">n_mod_str</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="n">n_mod_str</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span>
+
+        <span class="n">sorted_ambiguities</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sequence_ambiguities</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">a</span><span class="p">:</span> <span class="n">a</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+        <span class="n">ambiguity_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aa</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">ambiguity_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">sorted_ambiguities</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">sorted_ambiguities</span><span class="p">[</span><span class="n">ambiguity_index</span><span class="p">]</span><span class="o">.</span><span class="n">position</span> <span class="o">==</span> <span class="n">i</span>
+            <span class="p">):</span>
+                <span class="n">ambiguity</span> <span class="o">=</span> <span class="n">sorted_ambiguities</span><span class="p">[</span><span class="n">ambiguity_index</span><span class="p">]</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;(?</span><span class="si">{</span><span class="n">ambiguity</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="n">ambiguity_index</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">range_start</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aa</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">chain</span><span class="o">.</span><span class="n">seq</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">range_start</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">start</span><span class="p">:</span>
+                        <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;(&quot;</span>
+                        <span class="n">range_start</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="k">break</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">aa</span><span class="o">.</span><span class="n">value</span>
+            <span class="n">mod_str_data</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">if</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                <span class="n">crosslink_refs_added</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+                <span class="n">branch_refs_added</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                    <span class="n">this_mod_str</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="n">this_mod_str</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">range_start</span> <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">in_range</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">mod_type</span> <span class="o">==</span> <span class="s2">&quot;ambiguous&quot;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">mod</span><span class="o">.</span><span class="n">has_ambiguity</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">in_range</span><span class="p">:</span>
+                                <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="s2">]&quot;</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="s2">]&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="s2">]&quot;</span>
+
+                    <span class="n">mod_str_data</span> <span class="o">+=</span> <span class="n">this_mod_str</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="n">mod_str_data</span>
+
+            <span class="k">if</span> <span class="n">range_start</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">,</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">ranges</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">end</span><span class="p">:</span>
+                        <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;)&quot;</span>
+                        <span class="n">range_start</span> <span class="o">=</span> <span class="kc">False</span>
+                        <span class="k">break</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">range_start</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_mod_and_add_to_string</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="o">-</span><span class="mi">2</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="n">n_mod_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">chain</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]:</span>
+                <span class="n">mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()</span><span class="si">}</span><span class="s2">]&quot;</span>
+                <span class="n">n_mod_str</span> <span class="o">+=</span> <span class="n">mod_str</span>
+            <span class="k">if</span> <span class="n">n_mod_str</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="s2">&quot;-&quot;</span> <span class="o">+</span> <span class="n">n_mod_str</span>
+        <span class="k">if</span> <span class="n">chain</span><span class="o">.</span><span class="n">charge</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;/</span><span class="si">{</span><span class="n">chain</span><span class="o">.</span><span class="n">charge</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">chain</span><span class="o">.</span><span class="n">ionic_species</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">chain</span><span class="o">.</span><span class="n">ionic_species</span><span class="si">}</span><span class="s2">]&quot;</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_info_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">mod</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add info tags to the result string based on the modification.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        result : str</span>
+<span class="sd">            The current result string.</span>
+<span class="sd">        mod : Modification</span>
+<span class="sd">            The modification object.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            The updated result string with info tags.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">info_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">added_info</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="n">stripped_result</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)</span>
+        <span class="n">stripped_result</span> <span class="o">=</span> <span class="n">stripped_result</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">)</span>
+        <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">stripped_result</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">stripped_result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">i_splitted</span> <span class="o">=</span> <span class="n">i</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">i_splitted</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i2</span> <span class="ow">in</span> <span class="n">i_splitted</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">i2</span> <span class="ow">and</span> <span class="n">i2</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">added_info</span><span class="p">:</span>
+                        <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">i2</span><span class="p">)</span>
+            <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s2">&quot;mass&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">mass</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">mass_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;+</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">mass</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">mass</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">mass</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">mass_str</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">added_info</span><span class="p">:</span>
+                <span class="n">info_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;|</span><span class="si">{</span><span class="n">mass_str</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">mass_str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s2">&quot;synonyms&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">synonyms</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">synonym</span> <span class="ow">in</span> <span class="n">mod</span><span class="o">.</span><span class="n">synonyms</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">synonym</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">added_info</span><span class="p">:</span>
+                    <span class="n">info_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;|</span><span class="si">{</span><span class="n">synonym</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">synonym</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s2">&quot;observed_mass&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">observed_mass</span><span class="p">:</span>
+            <span class="n">obs_str</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Obs:+</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">observed_mass</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">observed_mass</span> <span class="o">&gt;</span> <span class="mi">0</span>
+                <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;Obs:</span><span class="si">{</span><span class="n">mod</span><span class="o">.</span><span class="n">observed_mass</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">obs_str</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">added_info</span><span class="p">:</span>
+                <span class="n">info_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;|</span><span class="si">{</span><span class="n">obs_str</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obs_str</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">mod</span><span class="p">,</span> <span class="s2">&quot;info_tags&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mod</span><span class="o">.</span><span class="n">info_tags</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">mod</span><span class="o">.</span><span class="n">info_tags</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">added_info</span><span class="p">:</span>
+                    <span class="n">info_str</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;|</span><span class="si">{</span><span class="n">tag</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="n">added_info</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">info_str</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">):</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">result</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">info_str</span> <span class="o">+</span> <span class="s2">&quot;]&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">+=</span> <span class="n">info_str</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="Sequence.get_mod_and_add_to_string">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.get_mod_and_add_to_string">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_mod_and_add_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aa</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="n">mod_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                <span class="n">this_mod_str</span> <span class="o">=</span> <span class="n">mod</span><span class="o">.</span><span class="n">to_proforma</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">mod_type</span> <span class="o">==</span> <span class="s2">&quot;ambiguous&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">mod</span><span class="o">.</span><span class="n">has_ambiguity</span><span class="p">():</span>
+                        <span class="k">if</span> <span class="n">mod</span><span class="o">.</span><span class="n">in_range</span><span class="p">:</span>
+                            <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="s2">]&quot;</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">{{</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="se">}}</span><span class="s2">&quot;</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="s2">]&quot;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">this_mod_str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">this_mod_str</span><span class="si">}</span><span class="s2">]&quot;</span>
+                <span class="n">mod_str</span> <span class="o">+=</span> <span class="n">this_mod_str</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="n">mod_str</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="Sequence.to_proforma">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.to_proforma">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_proforma</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;is_multi_chain&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_multi_chain</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;//&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_chain_to_proforma</span><span class="p">(</span><span class="n">chain</span><span class="p">)</span> <span class="k">for</span> <span class="n">chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">chains</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;is_chimeric&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_chimeric</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;+&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_chain_to_proforma</span><span class="p">(</span><span class="n">peptide</span><span class="p">)</span> <span class="k">for</span> <span class="n">peptide</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">peptidoforms</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">result</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_chain_to_proforma</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">],</span> <span class="n">mod_position</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse the input sequence into a list of BaseBlock objects.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seq : Union[str, List]</span>
+<span class="sd">            The input sequence to parse.</span>
+<span class="sd">        mod_position : str</span>
+<span class="sd">            Position of modifications relative to residues.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_mod</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">current_position</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">if</span> <span class="n">mod_position</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;mod_position must be either &#39;left&#39; or &#39;right&#39;&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">block</span><span class="p">,</span> <span class="n">is_mod</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_iterator</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">seq</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_mod</span><span class="p">:</span>
+                <span class="c1"># Handle an amino acid/residue</span>
+                <span class="k">if</span> <span class="n">mod_position</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span><span class="p">:</span>
+                    <span class="c1"># Handle left-positioned modifications</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">):</span>
+                        <span class="n">current_unit</span> <span class="o">=</span> <span class="n">block</span>
+                        <span class="n">current_unit</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">current_position</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">current_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">current_position</span><span class="p">)</span>
+
+                    <span class="c1"># Apply pending modifications</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_apply_modifications</span><span class="p">(</span>
+                        <span class="n">current_unit</span><span class="p">,</span> <span class="n">current_position</span><span class="p">,</span> <span class="n">current_mod</span>
+                    <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">current_unit</span><span class="p">))</span>
+                    <span class="n">current_mod</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># mod_position == &quot;right&quot;</span>
+                    <span class="c1"># Apply modifications to previous residue</span>
+                    <span class="k">if</span> <span class="n">current_mod</span> <span class="ow">and</span> <span class="n">current_position</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">current_mod</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">current_position</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+                    <span class="c1"># Create new residue</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">):</span>
+                        <span class="n">current_unit</span> <span class="o">=</span> <span class="n">block</span>
+                        <span class="n">current_unit</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">current_position</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">current_unit</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">current_position</span><span class="p">)</span>
+
+                    <span class="c1"># Apply configured modifications</span>
+                    <span class="k">if</span> <span class="n">current_position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                        <span class="n">mods_to_apply</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="n">current_position</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mods_to_apply</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">mods_to_apply</span><span class="p">:</span>
+                                <span class="n">current_unit</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">current_unit</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mods_to_apply</span><span class="p">)</span>
+
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">current_unit</span><span class="p">))</span>
+                    <span class="n">current_mod</span> <span class="o">=</span> <span class="p">[]</span>
+
+                <span class="n">current_position</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># is_mod is True</span>
+                <span class="c1"># Handle a modification</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>  <span class="c1"># Only if not using predefined mods dict</span>
+                    <span class="c1"># Extract mod string and create Modification object</span>
+                    <span class="n">mod_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_mod_value</span><span class="p">(</span><span class="n">block</span><span class="p">)</span>
+                    <span class="n">mod_obj</span> <span class="o">=</span> <span class="n">Modification</span><span class="p">(</span><span class="n">mod_value</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">mod_position</span> <span class="o">==</span> <span class="s2">&quot;right&quot;</span> <span class="ow">and</span> <span class="n">current_position</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1"># Apply directly to previous residue for right positioning</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">current_position</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod_obj</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="c1"># Store for later application with left positioning</span>
+                        <span class="n">current_mod</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod_obj</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_modifications</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">block</span><span class="p">:</span> <span class="n">BaseBlock</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">pending_mods</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Apply modifications to a block.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        block : BaseBlock</span>
+<span class="sd">            The block to modify.</span>
+<span class="sd">        position : int</span>
+<span class="sd">            Position of the block.</span>
+<span class="sd">        pending_mods : List[Modification]</span>
+<span class="sd">            List of pending modifications to apply.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Apply pending modifications (from parsing)</span>
+        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">pending_mods</span><span class="p">:</span>
+            <span class="n">block</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+        <span class="c1"># Apply configured modifications (from mods dict)</span>
+        <span class="k">if</span> <span class="n">position</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="n">mods_to_apply</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mods</span><span class="p">[</span><span class="n">position</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mods_to_apply</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">mods_to_apply</span><span class="p">:</span>
+                    <span class="n">block</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">block</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mods_to_apply</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_mod_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mod_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract modification value from a string.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mod_str : str</span>
+<span class="sd">            String containing modification.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Extracted modification value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Find content between brackets/parentheses</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">mod_str</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MOD_ENCLOSURE_START</span>
+            <span class="ow">and</span> <span class="n">mod_str</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MOD_ENCLOSURE_END</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="n">mod_str</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">mod_str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_sequence_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq_iter</span><span class="p">:</span> <span class="n">Iterator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Iterate through sequence elements, identifying blocks and modifications.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        seq_iter : Iterator</span>
+<span class="sd">            Iterator over sequence elements.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        Tuple[Any, bool]</span>
+<span class="sd">            Tuple of (block, is_modification)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mod_open</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">block</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">is_mod</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">seq_iter</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MOD_ENCLOSURE_START</span><span class="p">:</span>
+                    <span class="n">is_mod</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">mod_open</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_MOD_ENCLOSURE_END</span><span class="p">:</span>
+                    <span class="n">mod_open</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="n">block</span> <span class="o">+=</span> <span class="n">item</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span><span class="p">):</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="n">item</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Recursively handle nested iterables</span>
+                <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sequence_iterator</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">item</span><span class="p">))</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">mod_open</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">block</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="p">(</span><span class="n">block</span><span class="p">,</span> <span class="n">is_mod</span><span class="p">)</span>
+                <span class="n">is_mod</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">block</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">BaseBlock</span><span class="p">,</span> <span class="s2">&quot;Sequence&quot;</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get item or slice from sequence.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        key : Union[int, slice]</span>
+<span class="sd">            Index or slice to retrieve.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[BaseBlock, Sequence]</span>
+<span class="sd">            Single block or new Sequence containing the slice.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">new_seq</span> <span class="o">=</span> <span class="n">Sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parse</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">new_seq</span><span class="o">.</span><span class="n">seq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">new_seq</span><span class="o">.</span><span class="n">seq_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">new_seq</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">new_seq</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the length of the sequence.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_length</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a programmatic representation of the sequence.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Sequence(&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&#39;)&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a string representation of the sequence.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">block</span><span class="p">)</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Sequence&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize iteration over the sequence.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_iter_count</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseBlock</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the next block in the sequence.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_iter_count</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_length</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">current_iter_count</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_iter_count</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if two sequences are equal.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq_length</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">seq_length</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">a</span> <span class="o">==</span> <span class="n">b</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">seq</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Sequence.add_modifications">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.add_modifications">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_modifications</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mod_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Add modifications to residues at specified positions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mod_dict : Dict[int, List[Modification]]</span>
+<span class="sd">            Dictionary mapping positions to lists of modifications.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">aa</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">aa</span><span class="o">.</span><span class="n">position</span> <span class="ow">in</span> <span class="n">mod_dict</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">mod_dict</span><span class="p">[</span><span class="n">aa</span><span class="o">.</span><span class="n">position</span><span class="p">]:</span>
+                    <span class="n">aa</span><span class="o">.</span><span class="n">add_modification</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sequence.to_stripped_string">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.to_stripped_string">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_stripped_string</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the sequence as a string without any modification annotations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            The stripped sequence string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">block</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sequence.to_string_customize">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.to_string_customize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_string_customize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
+        <span class="n">annotation_placement</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;right&quot;</span><span class="p">,</span>
+        <span class="n">block_separator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">annotation_enclose_characters</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">),</span>
+        <span class="n">individual_annotation_enclose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">individual_annotation_enclose_characters</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">,</span> <span class="s2">&quot;]&quot;</span><span class="p">),</span>
+        <span class="n">individual_annotation_separator</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Customize the sequence string with annotations.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        data : Dict[int, Union[str, List[str]]]</span>
+<span class="sd">            Dictionary mapping positions to annotations.</span>
+<span class="sd">        annotation_placement : str, optional</span>
+<span class="sd">            Placement of annotations (&quot;left&quot; or &quot;right&quot;).</span>
+<span class="sd">        block_separator : str, optional</span>
+<span class="sd">            Separator between blocks.</span>
+<span class="sd">        annotation_enclose_characters : Tuple[str, str], optional</span>
+<span class="sd">            Characters to enclose annotation groups.</span>
+<span class="sd">        individual_annotation_enclose : bool, optional</span>
+<span class="sd">            Whether to enclose individual annotations.</span>
+<span class="sd">        individual_annotation_enclose_characters : Tuple[str, str], optional</span>
+<span class="sd">            Characters to enclose individual annotations.</span>
+<span class="sd">        individual_annotation_separator : str, optional</span>
+<span class="sd">            Separator between individual annotations.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Customized sequence string with annotations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">annotation_placement</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;left&quot;</span><span class="p">,</span> <span class="s2">&quot;right&quot;</span><span class="p">}:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;annotation_placement must be either &#39;left&#39; or &#39;right&#39;&quot;</span><span class="p">)</span>
+
+        <span class="n">elements</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">)):</span>
+            <span class="c1"># Add annotation before residue if placement is left</span>
+            <span class="k">if</span> <span class="n">annotation_placement</span> <span class="o">==</span> <span class="s2">&quot;left&quot;</span> <span class="ow">and</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">annotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_annotation</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">individual_annotation_enclose</span><span class="p">,</span>
+                    <span class="n">individual_annotation_enclose_characters</span><span class="p">,</span>
+                    <span class="n">individual_annotation_separator</span><span class="p">,</span>
+                    <span class="n">annotation_enclose_characters</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
+
+            <span class="c1"># Add residue</span>
+            <span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="c1"># Add annotation after residue if placement is right</span>
+            <span class="k">if</span> <span class="n">annotation_placement</span> <span class="o">==</span> <span class="s2">&quot;right&quot;</span> <span class="ow">and</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+                <span class="n">annotation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_annotation</span><span class="p">(</span>
+                    <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">individual_annotation_enclose</span><span class="p">,</span>
+                    <span class="n">individual_annotation_enclose_characters</span><span class="p">,</span>
+                    <span class="n">individual_annotation_separator</span><span class="p">,</span>
+                    <span class="n">annotation_enclose_characters</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">elements</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">annotation</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">block_separator</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_annotation</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">annotations</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+        <span class="n">individual_enclose</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">individual_enclose_chars</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">separator</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">group_enclose_chars</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Format annotation strings.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        annotations : Union[str, List[str]]</span>
+<span class="sd">            Annotations to format.</span>
+<span class="sd">        individual_enclose : bool</span>
+<span class="sd">            Whether to enclose individual annotations.</span>
+<span class="sd">        individual_enclose_chars : Tuple[str, str]</span>
+<span class="sd">            Characters to enclose individual annotations.</span>
+<span class="sd">        separator : str</span>
+<span class="sd">            Separator between annotations.</span>
+<span class="sd">        group_enclose_chars : Optional[Tuple[str, str]]</span>
+<span class="sd">            Characters to enclose the entire annotation group.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            Formatted annotation string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">ann_text</span> <span class="o">=</span> <span class="n">annotations</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">individual_enclose</span><span class="p">:</span>
+                <span class="n">enclosed_annotations</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">individual_enclose_chars</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">item</span><span class="si">}{</span><span class="n">individual_enclose_chars</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">annotations</span>
+                <span class="p">]</span>
+                <span class="n">ann_text</span> <span class="o">=</span> <span class="n">separator</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">enclosed_annotations</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ann_text</span> <span class="o">=</span> <span class="n">separator</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">annotations</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">group_enclose_chars</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">group_enclose_chars</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}{</span><span class="n">ann_text</span><span class="si">}{</span><span class="n">group_enclose_chars</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">ann_text</span>
+
+<div class="viewcode-block" id="Sequence.find_with_regex">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.find_with_regex">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_with_regex</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">motif</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ignore</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">slice</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find positions in the sequence that match a given regex motif.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        motif : str</span>
+<span class="sd">            Regex pattern to search for.</span>
+<span class="sd">        ignore : Optional[List[bool]], optional</span>
+<span class="sd">            Positions to ignore (True = ignore).</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        slice</span>
+<span class="sd">            Slice representing match position.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">motif</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ignore</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Build string excluding ignored positions</span>
+            <span class="n">seq_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ignore</span><span class="p">))</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">ignore</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">seq_str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_stripped_string</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">pattern</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="n">seq_str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="o">.</span><span class="n">groups</span><span class="p">():</span>
+                <span class="k">yield</span> <span class="nb">slice</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">(),</span> <span class="n">match</span><span class="o">.</span><span class="n">end</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">group_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">groups</span><span class="p">())</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                    <span class="k">yield</span> <span class="nb">slice</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">group_idx</span><span class="p">),</span> <span class="n">match</span><span class="o">.</span><span class="n">end</span><span class="p">(</span><span class="n">group_idx</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Sequence.gaps">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.gaps">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">gaps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Identify gaps in the sequence.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        List[bool]</span>
+<span class="sd">            List where True indicates a gap at that position.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">block</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span> <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="Sequence.count">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.count">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">count</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">char</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">end</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Count occurrences of a character in a range.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        char : str</span>
+<span class="sd">            Character to count.</span>
+<span class="sd">        start : int</span>
+<span class="sd">            Start position.</span>
+<span class="sd">        end : int</span>
+<span class="sd">            End position.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        int</span>
+<span class="sd">            Number of occurrences.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_stripped_string</span><span class="p">()</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="n">char</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sequence.to_dict">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert the sequence to a dictionary representation.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dict[str, Any]</span>
+<span class="sd">            Dictionary with sequence data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Collect all modifications by position</span>
+        <span class="n">mods_by_position</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">aa</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">aa</span><span class="p">,</span> <span class="s2">&quot;mods&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                <span class="n">mods_by_position</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;sequence&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_stripped_string</span><span class="p">(),</span>
+            <span class="s2">&quot;modifications&quot;</span><span class="p">:</span> <span class="n">mods_by_position</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="count_unique_elements">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.count_unique_elements">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_unique_elements</span><span class="p">(</span><span class="n">seq</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Count unique elements in a sequence.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    seq : Iterable[BaseBlock]</span>
+<span class="sd">        The sequence of blocks to count elements from. Each element should</span>
+<span class="sd">        have a `value` attribute and optionally a `mods` attribute.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict[str, int]</span>
+<span class="sd">        Dictionary where keys are element values and values are their counts.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; from sequal.sequence import Sequence</span>
+<span class="sd">    &gt;&gt;&gt; seq = Sequence(&quot;ACDEFG&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; counts = count_unique_elements(seq)</span>
+<span class="sd">    &gt;&gt;&gt; sorted(counts.items())</span>
+<span class="sd">    [(&#39;A&#39;, 1), (&#39;C&#39;, 1), (&#39;D&#39;, 1), (&#39;E&#39;, 1), (&#39;F&#39;, 1), (&#39;G&#39;, 1)]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">seq</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{}</span>
+
+    <span class="n">elements</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">seq</span><span class="p">:</span>
+        <span class="n">elements</span><span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="c1"># Count modifications if present</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s2">&quot;mods&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">item</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
+                <span class="n">elements</span><span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">elements</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="variable_position_placement_generator">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.variable_position_placement_generator">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">variable_position_placement_generator</span><span class="p">(</span><span class="n">positions</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generate all possible position combinations for modifications.</span>
+
+<span class="sd">    This function creates all possible subsets of positions, including</span>
+<span class="sd">    the empty set and the full set.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    positions : List[int]</span>
+<span class="sd">        List of positions where modifications could be applied.</span>
+
+<span class="sd">    Yields</span>
+<span class="sd">    ------</span>
+<span class="sd">    List[int]</span>
+<span class="sd">        Each possible combination of positions.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; list(variable_position_placement_generator([1, 2]))</span>
+<span class="sd">    [[], [1], [2], [1, 2]]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">positions</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="p">[]</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Sort positions for consistent output</span>
+    <span class="n">sorted_positions</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+
+    <span class="c1"># Generate all possible combinations (2^n possibilities)</span>
+    <span class="k">for</span> <span class="n">mask</span> <span class="ow">in</span> <span class="n">itertools</span><span class="o">.</span><span class="n">product</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">repeat</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">sorted_positions</span><span class="p">)):</span>
+        <span class="k">yield</span> <span class="p">[</span><span class="n">pos</span> <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">include</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sorted_positions</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span> <span class="k">if</span> <span class="n">include</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="ordered_serialize_position_dict">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.ordered_serialize_position_dict">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">ordered_serialize_position_dict</span><span class="p">(</span><span class="n">positions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Serialize a dictionary of positions with consistent ordering.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    positions : Dict[int, Any]</span>
+<span class="sd">        Dictionary mapping positions to modifications or other data.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        JSON string with sorted keys for consistent serialization.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    TypeError</span>
+<span class="sd">        If the dictionary contains values that cannot be serialized to JSON.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">positions</span><span class="p">,</span> <span class="n">sort_keys</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="nb">str</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not serialize positions dictionary: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span></div>
+
+
+
+<div class="viewcode-block" id="ModdedSequenceGenerator">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.ModdedSequenceGenerator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ModdedSequenceGenerator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generator for sequences with different modification combinations.</span>
+
+<span class="sd">    This class creates all possible modified sequences by applying combinations</span>
+<span class="sd">    of static and variable modifications to a base sequence.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    seq : str</span>
+<span class="sd">        The base sequence to modify.</span>
+<span class="sd">    variable_mods : List[Modification], optional</span>
+<span class="sd">        List of variable modifications to apply.</span>
+<span class="sd">    static_mods : List[Modification], optional</span>
+<span class="sd">        List of static modifications to apply.</span>
+<span class="sd">    used_scenarios : Set[str], optional</span>
+<span class="sd">        Set of serialized modification scenarios to avoid duplicates.</span>
+<span class="sd">    parse_mod_position : bool, optional</span>
+<span class="sd">        Whether to parse positions using modification regex patterns.</span>
+<span class="sd">    mod_position_dict : Dict[str, List[int]], optional</span>
+<span class="sd">        Pre-computed positions for modifications.</span>
+<span class="sd">    ignore_position : Set[int], optional</span>
+<span class="sd">        Set of positions to ignore when applying modifications.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">seq</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">variable_mods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">static_mods</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">used_scenarios</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">parse_mod_position</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">mod_position_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ignore_position</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seq</span> <span class="o">=</span> <span class="n">seq</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_mods</span> <span class="o">=</span> <span class="n">static_mods</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span> <span class="o">=</span> <span class="n">variable_mods</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">used_scenarios_set</span> <span class="o">=</span> <span class="n">used_scenarios</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_position</span> <span class="o">=</span> <span class="n">ignore_position</span> <span class="ow">or</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="c1"># Initialize modification maps and position dictionaries</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_mod_position_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_mods</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_map</span> <span class="o">=</span> <span class="n">ModificationMap</span><span class="p">(</span>
+                <span class="n">seq</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">static_mods</span><span class="p">,</span>
+                <span class="n">parse_position</span><span class="o">=</span><span class="n">parse_mod_position</span><span class="p">,</span>
+                <span class="n">mod_position_dict</span><span class="o">=</span><span class="n">mod_position_dict</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_mod_position_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_static_mod_positions</span><span class="p">()</span>
+
+            <span class="c1"># Update ignore positions with static mod positions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ignore_position</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_mod_position_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_map_scenarios</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span><span class="p">:</span>
+            <span class="c1"># Create variable modification map, considering ignored positions</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">variable_map</span> <span class="o">=</span> <span class="n">ModificationMap</span><span class="p">(</span>
+                <span class="n">seq</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span><span class="p">,</span>
+                <span class="n">ignore_positions</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ignore_position</span><span class="p">,</span>
+                <span class="n">parse_position</span><span class="o">=</span><span class="n">parse_mod_position</span><span class="p">,</span>
+                <span class="n">mod_position_dict</span><span class="o">=</span><span class="n">mod_position_dict</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="ModdedSequenceGenerator.generate">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.ModdedSequenceGenerator.generate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate all possible modification combinations.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        Dict[int, List[Modification]]</span>
+<span class="sd">            Dictionary mapping positions to lists of modifications for each scenario.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span><span class="p">:</span>
+            <span class="c1"># If only static mods, yield the single scenario if not already used</span>
+            <span class="n">serialized</span> <span class="o">=</span> <span class="n">ordered_serialize_position_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_mod_position_dict</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">serialized</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">used_scenarios_set</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">used_scenarios_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_mod_position_dict</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Generate all variable mod scenarios</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_generate_variable_mod_scenarios</span><span class="p">()</span>
+
+        <span class="c1"># Explore all combinations</span>
+        <span class="k">for</span> <span class="n">variable_scenario</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_explore_scenarios</span><span class="p">():</span>
+            <span class="c1"># Combine static and variable modifications</span>
+            <span class="n">combined_scenario</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_mod_position_dict</span><span class="p">)</span>
+
+            <span class="c1"># Update with variable modifications</span>
+            <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">mods</span> <span class="ow">in</span> <span class="n">variable_scenario</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="k">if</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">combined_scenario</span><span class="p">:</span>
+                    <span class="n">combined_scenario</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">mods</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">combined_scenario</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="n">mods</span>
+
+            <span class="c1"># Serialize to check for duplicates</span>
+            <span class="n">serialized</span> <span class="o">=</span> <span class="n">ordered_serialize_position_dict</span><span class="p">(</span><span class="n">combined_scenario</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">serialized</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">used_scenarios_set</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">used_scenarios_set</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">serialized</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="n">combined_scenario</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_static_mod_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate dictionary of positions for static modifications.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Dict[int, List[Modification]]</span>
+<span class="sd">            Dictionary mapping positions to lists of static modifications.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">position_dict</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_mods</span><span class="p">:</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_map</span><span class="o">.</span><span class="n">get_mod_positions</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mod</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">positions</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">position</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+                    <span class="n">position_dict</span><span class="p">[</span><span class="n">position</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">position_dict</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_variable_mod_scenarios</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate all possible position combinations for variable modifications.</span>
+
+<span class="sd">        Populates self.variable_map_scenarios with possible position combinations</span>
+<span class="sd">        for each variable modification.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variable_map_scenarios</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span><span class="p">:</span>
+            <span class="n">positions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_map</span><span class="o">.</span><span class="n">get_mod_positions</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">mod</span><span class="p">))</span> <span class="ow">or</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">mod</span><span class="o">.</span><span class="n">all_filled</span><span class="p">:</span>
+                <span class="c1"># Generate all possible subsets of positions</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variable_map_scenarios</span><span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                    <span class="n">variable_position_placement_generator</span><span class="p">(</span><span class="n">positions</span><span class="p">)</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># For all_filled mods, only empty list or all positions are valid</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">variable_map_scenarios</span><span class="p">[</span><span class="n">mod</span><span class="o">.</span><span class="n">value</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[],</span> <span class="n">positions</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_explore_scenarios</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">current_mod_idx</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">current_scenario</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]]]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Recursively explore all possible modification scenarios.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        current_mod_idx : int, optional</span>
+<span class="sd">            Index of the current modification being processed.</span>
+<span class="sd">        current_scenario : Dict[int, List[Modification]], optional</span>
+<span class="sd">            Current scenario being built.</span>
+
+<span class="sd">        Yields</span>
+<span class="sd">        ------</span>
+<span class="sd">        Dict[int, List[Modification]]</span>
+<span class="sd">            Each possible scenario of variable modifications.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">current_scenario</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">current_scenario</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Base case: processed all modifications</span>
+        <span class="k">if</span> <span class="n">current_mod_idx</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">current_scenario</span>
+            <span class="k">return</span>
+
+        <span class="n">current_mod</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span><span class="p">[</span><span class="n">current_mod_idx</span><span class="p">]</span>
+        <span class="n">position_combinations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">variable_map_scenarios</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">current_mod</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="p">[[]])</span>
+
+        <span class="k">for</span> <span class="n">positions</span> <span class="ow">in</span> <span class="n">position_combinations</span><span class="p">:</span>
+            <span class="c1"># Create a copy of the current scenario</span>
+            <span class="n">scenario_copy</span> <span class="o">=</span> <span class="n">deepcopy</span><span class="p">(</span><span class="n">current_scenario</span><span class="p">)</span>
+
+            <span class="c1"># Add current modification to positions</span>
+            <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="n">positions</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">pos</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">scenario_copy</span><span class="p">:</span>
+                    <span class="n">scenario_copy</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">scenario_copy</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">current_mod</span><span class="p">)</span>
+
+            <span class="c1"># Recursively continue with next modification</span>
+            <span class="k">yield from</span> <span class="bp">self</span><span class="o">.</span><span class="n">_explore_scenarios</span><span class="p">(</span><span class="n">current_mod_idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">scenario_copy</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="split_chimeric_proforma">
+<a class="viewcode-back" href="../../sequence.html#sequal.sequence.split_chimeric_proforma">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">split_chimeric_proforma</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Splits a ProForma string representing multiple chimeric assignments</span>
+<span class="sd">    into individual peptidoform strings.</span>
+
+<span class="sd">    The split occurs at &#39;+&#39; characters that are not enclosed within any</span>
+<span class="sd">    type of brackets (&#39;[]&#39;, &#39;()&#39;, &#39;{}&#39;). This ensures that &#39;+&#39; signs</span>
+<span class="sd">    within modification tags or ionic species definitions are ignored.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        proforma_str: The input ProForma string, potentially containing</span>
+<span class="sd">                      multiple assignments separated by &#39;+&#39;.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of strings, where each string is a ProForma representation</span>
+<span class="sd">        of a single peptidoform assignment. Returns a list containing</span>
+<span class="sd">        the original string if no valid &#39;+&#39; separator is found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parts</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">current_part_start</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">bracket_level</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">char</span> <span class="ow">in</span> <span class="s2">&quot;[{(&quot;</span><span class="p">:</span>
+            <span class="n">bracket_level</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="s2">&quot;]})&quot;</span><span class="p">:</span>
+            <span class="n">bracket_level</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">bracket_level</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;+&quot;</span> <span class="ow">and</span> <span class="n">bracket_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">[</span><span class="n">current_part_start</span><span class="p">:</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="n">current_part_start</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">[</span><span class="n">current_part_start</span><span class="p">:]</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">part</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">parts</span> <span class="k">if</span> <span class="n">part</span><span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Toan K. Phung.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

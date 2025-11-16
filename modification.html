@@ -1,0 +1,653 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>modification &mdash; sequal 2.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=20623aea"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="proforma" href="proforma.html" />
+    <link rel="prev" title="mass_spectrometry" href="mass_spectrometry.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            sequal
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="amino_acid.html">amino_acid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base_block.html">base_block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ion.html">ion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mass.html">mass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mass_spectrometry.html">mass_spectrometry</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">modification</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.modification.GlobalModification"><code class="docutils literal notranslate"><span class="pre">GlobalModification</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.GlobalModification.to_proforma"><code class="docutils literal notranslate"><span class="pre">GlobalModification.to_proforma()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.modification.Modification"><code class="docutils literal notranslate"><span class="pre">Modification</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.KNOWN_SOURCES"><code class="docutils literal notranslate"><span class="pre">Modification.KNOWN_SOURCES</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.all_filled"><code class="docutils literal notranslate"><span class="pre">Modification.all_filled</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.ambiguity_group"><code class="docutils literal notranslate"><span class="pre">Modification.ambiguity_group</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.crosslink_id"><code class="docutils literal notranslate"><span class="pre">Modification.crosslink_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.find_positions"><code class="docutils literal notranslate"><span class="pre">Modification.find_positions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.full_name"><code class="docutils literal notranslate"><span class="pre">Modification.full_name</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.has_ambiguity"><code class="docutils literal notranslate"><span class="pre">Modification.has_ambiguity()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.has_branch"><code class="docutils literal notranslate"><span class="pre">Modification.has_branch()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.has_crosslink"><code class="docutils literal notranslate"><span class="pre">Modification.has_crosslink()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.info_tags"><code class="docutils literal notranslate"><span class="pre">Modification.info_tags</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.is_ambiguity_ref"><code class="docutils literal notranslate"><span class="pre">Modification.is_ambiguity_ref</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.is_crosslink_ref"><code class="docutils literal notranslate"><span class="pre">Modification.is_crosslink_ref</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.labile"><code class="docutils literal notranslate"><span class="pre">Modification.labile</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.labile_number"><code class="docutils literal notranslate"><span class="pre">Modification.labile_number</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.mass"><code class="docutils literal notranslate"><span class="pre">Modification.mass</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.mod_type"><code class="docutils literal notranslate"><span class="pre">Modification.mod_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.mod_value"><code class="docutils literal notranslate"><span class="pre">Modification.mod_value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.observed_mass"><code class="docutils literal notranslate"><span class="pre">Modification.observed_mass</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.original_value"><code class="docutils literal notranslate"><span class="pre">Modification.original_value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.regex"><code class="docutils literal notranslate"><span class="pre">Modification.regex</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.source"><code class="docutils literal notranslate"><span class="pre">Modification.source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.synonyms"><code class="docutils literal notranslate"><span class="pre">Modification.synonyms</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.to_dict"><code class="docutils literal notranslate"><span class="pre">Modification.to_dict()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.to_proforma"><code class="docutils literal notranslate"><span class="pre">Modification.to_proforma()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.Modification.value"><code class="docutils literal notranslate"><span class="pre">Modification.value</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.modification.ModificationMap"><code class="docutils literal notranslate"><span class="pre">ModificationMap</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationMap.get_mod"><code class="docutils literal notranslate"><span class="pre">ModificationMap.get_mod()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationMap.get_mod_positions"><code class="docutils literal notranslate"><span class="pre">ModificationMap.get_mod_positions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationMap.get_mods_at_position"><code class="docutils literal notranslate"><span class="pre">ModificationMap.get_mods_at_position()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationMap.has_mod_at_position"><code class="docutils literal notranslate"><span class="pre">ModificationMap.has_mod_at_position()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationMap.to_dict"><code class="docutils literal notranslate"><span class="pre">ModificationMap.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.modification.ModificationValue"><code class="docutils literal notranslate"><span class="pre">ModificationValue</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.KNOWN_SOURCES"><code class="docutils literal notranslate"><span class="pre">ModificationValue.KNOWN_SOURCES</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.ambiguity_group"><code class="docutils literal notranslate"><span class="pre">ModificationValue.ambiguity_group</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.crosslink_id"><code class="docutils literal notranslate"><span class="pre">ModificationValue.crosslink_id</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.info_tags"><code class="docutils literal notranslate"><span class="pre">ModificationValue.info_tags</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.is_ambiguity_ref"><code class="docutils literal notranslate"><span class="pre">ModificationValue.is_ambiguity_ref</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.is_branch"><code class="docutils literal notranslate"><span class="pre">ModificationValue.is_branch</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.is_branch_ref"><code class="docutils literal notranslate"><span class="pre">ModificationValue.is_branch_ref</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.is_crosslink_ref"><code class="docutils literal notranslate"><span class="pre">ModificationValue.is_crosslink_ref</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.mass"><code class="docutils literal notranslate"><span class="pre">ModificationValue.mass</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.observed_mass"><code class="docutils literal notranslate"><span class="pre">ModificationValue.observed_mass</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.pipe_values"><code class="docutils literal notranslate"><span class="pre">ModificationValue.pipe_values</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.primary_value"><code class="docutils literal notranslate"><span class="pre">ModificationValue.primary_value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.source"><code class="docutils literal notranslate"><span class="pre">ModificationValue.source</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.synonyms"><code class="docutils literal notranslate"><span class="pre">ModificationValue.synonyms</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.ModificationValue.to_string"><code class="docutils literal notranslate"><span class="pre">ModificationValue.to_string()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#sequal.modification.PipeValue"><code class="docutils literal notranslate"><span class="pre">PipeValue</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.AMBIGUITY"><code class="docutils literal notranslate"><span class="pre">PipeValue.AMBIGUITY</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.BRANCH"><code class="docutils literal notranslate"><span class="pre">PipeValue.BRANCH</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.CROSSLINK"><code class="docutils literal notranslate"><span class="pre">PipeValue.CROSSLINK</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.FORMULA"><code class="docutils literal notranslate"><span class="pre">PipeValue.FORMULA</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.GAP"><code class="docutils literal notranslate"><span class="pre">PipeValue.GAP</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.GLYCAN"><code class="docutils literal notranslate"><span class="pre">PipeValue.GLYCAN</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.INFO_TAG"><code class="docutils literal notranslate"><span class="pre">PipeValue.INFO_TAG</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.MASS"><code class="docutils literal notranslate"><span class="pre">PipeValue.MASS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.OBSERVED_MASS"><code class="docutils literal notranslate"><span class="pre">PipeValue.OBSERVED_MASS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.SYNONYM"><code class="docutils literal notranslate"><span class="pre">PipeValue.SYNONYM</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.assign_type"><code class="docutils literal notranslate"><span class="pre">PipeValue.assign_type()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.PipeValue.type"><code class="docutils literal notranslate"><span class="pre">PipeValue.type</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="proforma.html">proforma</a></li>
+<li class="toctree-l1"><a class="reference internal" href="resources.html">resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sequence.html">sequence</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">sequal</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">modification</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modification.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-sequal.modification">
+<span id="modification"></span><h1>modification<a class="headerlink" href="#module-sequal.modification" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.modification.GlobalModification">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.modification.</span></span><span class="sig-name descname"><span class="pre">GlobalModification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_residues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mod_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'isotope'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#GlobalModification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.GlobalModification" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification"><code class="xref py py-class docutils literal notranslate"><span class="pre">Modification</span></code></a></p>
+<p>Represents a global modification that applies to specified residues.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.GlobalModification.to_proforma">
+<span class="sig-name descname"><span class="pre">to_proforma</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#GlobalModification.to_proforma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.GlobalModification.to_proforma" title="Link to this definition"></a></dt>
+<dd><p>Convert to ProForma notation.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.modification.Modification">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.modification.</span></span><span class="sig-name descname"><span class="pre">Modification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regex_pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mod_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'static'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labile_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">all_filled</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crosslink_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_crosslink_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_branch_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_branch</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ambiguity_group</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_ambiguity_ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">in_range</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range_start</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range_end</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">localization_score</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mod_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#sequal.modification.ModificationValue" title="sequal.modification.ModificationValue"><span class="pre">ModificationValue</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">position_constraint</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_per_position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colocalize_known</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">colocalize_unknown</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_ion_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#Modification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="base_block.html#sequal.base_block.BaseBlock" title="sequal.base_block.BaseBlock"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseBlock</span></code></a></p>
+<p>Represents a modification block with various properties for sequence analysis.</p>
+<p>This class extends BaseBlock to model biochemical modifications with additional
+properties like regex patterns, modification types, and fragmentation behavior.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>str</em>) – Short name of the modification.</p></li>
+<li><p><strong>position</strong> (<em>int</em><em>, </em><em>optional</em>) – Position of the modification. Should be provided when assigned to a block.</p></li>
+<li><p><strong>regex_pattern</strong> (<em>str</em><em>, </em><em>optional</em>) – Regular expression pattern for finding modification sites.</p></li>
+<li><p><strong>full_name</strong> (<em>str</em><em>, </em><em>optional</em>) – Full descriptive name of the modification.</p></li>
+<li><p><strong>mod_type</strong> (<em>str</em><em>, </em><em>optional</em>) – Type of modification: “static” or “variable”. Default is “static”.</p></li>
+<li><p><strong>labile</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the modification is labile (important for mass spectrometry).</p></li>
+<li><p><strong>labile_number</strong> (<em>int</em><em>, </em><em>optional</em>) – Order of fragment in labile fragmentation events.</p></li>
+<li><p><strong>mass</strong> (<em>float</em><em>, </em><em>optional</em>) – Mass delta of the modification in Daltons.</p></li>
+<li><p><strong>all_filled</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether modification occurs at all expected sites.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.Modification.KNOWN_SOURCES">
+<span class="sig-name descname"><span class="pre">KNOWN_SOURCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'Formula',</span> <span class="pre">'G',</span> <span class="pre">'GNO',</span> <span class="pre">'Glycan',</span> <span class="pre">'M',</span> <span class="pre">'MOD',</span> <span class="pre">'Obs',</span> <span class="pre">'PSI-MOD',</span> <span class="pre">'R',</span> <span class="pre">'RESID',</span> <span class="pre">'U',</span> <span class="pre">'Unimod',</span> <span class="pre">'X',</span> <span class="pre">'XL-MOD',</span> <span class="pre">'XLMOD'}</span></em><a class="headerlink" href="#sequal.modification.Modification.KNOWN_SOURCES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.all_filled">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">all_filled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.Modification.all_filled" title="Link to this definition"></a></dt>
+<dd><p>Check if the modification occurs at all expected sites.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.ambiguity_group">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ambiguity_group</span></span><a class="headerlink" href="#sequal.modification.Modification.ambiguity_group" title="Link to this definition"></a></dt>
+<dd><p>Get the ambiguity group of the modification.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.crosslink_id">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">crosslink_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.crosslink_id" title="Link to this definition"></a></dt>
+<dd><p>Get the crosslink identifier.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.Modification.find_positions">
+<span class="sig-name descname"><span class="pre">find_positions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.find_positions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.find_positions" title="Link to this definition"></a></dt>
+<dd><p>Find positions of the modification in the given sequence.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>seq</strong> (<em>str</em>) – The sequence to search for modification sites.</p>
+</dd>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Tuple[int, int]</em> – Start and end positions of each match in the sequence.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If no regex pattern was defined for this modification.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.full_name">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">full_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.full_name" title="Link to this definition"></a></dt>
+<dd><p>Get the full descriptive name of the modification.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.Modification.has_ambiguity">
+<span class="sig-name descname"><span class="pre">has_ambiguity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.has_ambiguity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.has_ambiguity" title="Link to this definition"></a></dt>
+<dd><p>Check if the modification has ambiguity.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.Modification.has_branch">
+<span class="sig-name descname"><span class="pre">has_branch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.has_branch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.has_branch" title="Link to this definition"></a></dt>
+<dd><p>Check if the modification has branch.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.Modification.has_crosslink">
+<span class="sig-name descname"><span class="pre">has_crosslink</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.has_crosslink"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.has_crosslink" title="Link to this definition"></a></dt>
+<dd><p>Check if the modification has crosslink.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.info_tags">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">info_tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.Modification.info_tags" title="Link to this definition"></a></dt>
+<dd><p>Get the list of information tags associated with the modification.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.is_ambiguity_ref">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_ambiguity_ref</span></span><a class="headerlink" href="#sequal.modification.Modification.is_ambiguity_ref" title="Link to this definition"></a></dt>
+<dd><p>Check if the modification is an ambiguity reference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.is_crosslink_ref">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_crosslink_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.Modification.is_crosslink_ref" title="Link to this definition"></a></dt>
+<dd><p>Check if this modification is a crosslink reference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.labile">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">labile</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.Modification.labile" title="Link to this definition"></a></dt>
+<dd><p>Check if the modification is labile.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.labile_number">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">labile_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#sequal.modification.Modification.labile_number" title="Link to this definition"></a></dt>
+<dd><p>Get the labile fragmentation order number.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.mass">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mass</span></span><a class="headerlink" href="#sequal.modification.Modification.mass" title="Link to this definition"></a></dt>
+<dd><p>Get the mass of the modification.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.mod_type">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mod_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.Modification.mod_type" title="Link to this definition"></a></dt>
+<dd><p>Get the modification type (static or variable).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.mod_value">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mod_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#sequal.modification.ModificationValue" title="sequal.modification.ModificationValue"><span class="pre">ModificationValue</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.mod_value" title="Link to this definition"></a></dt>
+<dd><p>Get the modification value object.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.observed_mass">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">observed_mass</span></span><a class="headerlink" href="#sequal.modification.Modification.observed_mass" title="Link to this definition"></a></dt>
+<dd><p>Get the observed mass of the modification.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.original_value">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">original_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.Modification.original_value" title="Link to this definition"></a></dt>
+<dd><p>Get the original value including any source prefix.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.regex">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regex</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Pattern</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.regex" title="Link to this definition"></a></dt>
+<dd><p>Get the compiled regex pattern for finding modification sites.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.source">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.source" title="Link to this definition"></a></dt>
+<dd><p>Get the modification database source.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.synonyms">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">synonyms</span></span><a class="headerlink" href="#sequal.modification.Modification.synonyms" title="Link to this definition"></a></dt>
+<dd><p>Get the synonyms of the modification.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.Modification.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Convert the modification to a dictionary representation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.Modification.to_proforma">
+<span class="sig-name descname"><span class="pre">to_proforma</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.to_proforma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.to_proforma" title="Link to this definition"></a></dt>
+<dd><p>Convert the modification to ProForma notation string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The ProForma string representation of this modification.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.Modification.value">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#sequal.modification.Modification.value" title="Link to this definition"></a></dt>
+<dd><p>Get the modification value.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.modification.ModificationMap">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.modification.</span></span><span class="sig-name descname"><span class="pre">ModificationMap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mods</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification"><span class="pre">Modification</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore_positions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Set</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parse_position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mod_position_dict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#ModificationMap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationMap" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Maps modifications to their positions in a sequence for quick lookup.</p>
+<p>This class provides efficient access to modification positions and
+modification objects by name or position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>seq</strong> (<em>str</em>) – The sequence to be analyzed.</p></li>
+<li><p><strong>mods</strong> (<em>List</em><em>[</em><a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification"><em>Modification</em></a><em>]</em>) – A list of Modification objects to be mapped.</p></li>
+<li><p><strong>ignore_positions</strong> (<em>Set</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – A set of positions to ignore when mapping.</p></li>
+<li><p><strong>parse_position</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to parse positions of modifications. Default is True.</p></li>
+<li><p><strong>mod_position_dict</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Pre-computed dict of modification positions.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.ModificationMap.get_mod">
+<span class="sig-name descname"><span class="pre">get_mod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mod_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification"><span class="pre">Modification</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationMap.get_mod"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationMap.get_mod" title="Link to this definition"></a></dt>
+<dd><p>Get the Modification object by its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mod_name</strong> (<em>str</em>) – The name of the modification.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The Modification object, or None if not found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification">Modification</a> or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.ModificationMap.get_mod_positions">
+<span class="sig-name descname"><span class="pre">get_mod_positions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mod_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationMap.get_mod_positions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationMap.get_mod_positions" title="Link to this definition"></a></dt>
+<dd><p>Get the positions of a modification by its name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>mod_name</strong> (<em>str</em>) – The name of the modification.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of positions where the modification is found, or None if not found.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[int] or None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.ModificationMap.get_mods_at_position">
+<span class="sig-name descname"><span class="pre">get_mods_at_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification"><span class="pre">Modification</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationMap.get_mods_at_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationMap.get_mods_at_position" title="Link to this definition"></a></dt>
+<dd><p>Get all modifications at a specific position.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>position</strong> (<em>int</em>) – The position to check for modifications.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of modifications at the specified position.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification">Modification</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.ModificationMap.has_mod_at_position">
+<span class="sig-name descname"><span class="pre">has_mod_at_position</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">position</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mod_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationMap.has_mod_at_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationMap.has_mod_at_position" title="Link to this definition"></a></dt>
+<dd><p>Check if a position has any modification or a specific modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>position</strong> (<em>int</em>) – The position to check</p></li>
+<li><p><strong>mod_name</strong> (<em>str</em><em>, </em><em>optional</em>) – The name of a specific modification to check for</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if position has the specified modification(s)</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.ModificationMap.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationMap.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationMap.to_dict" title="Link to this definition"></a></dt>
+<dd><p>Convert the modification map to a dictionary representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing the map’s data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.modification.</span></span><span class="sig-name descname"><span class="pre">ModificationValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#ModificationValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationValue" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a modification value with unified pipe value handling.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.KNOWN_SOURCES">
+<span class="sig-name descname"><span class="pre">KNOWN_SOURCES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'FORMULA',</span> <span class="pre">'Formula',</span> <span class="pre">'G',</span> <span class="pre">'GLYCAN',</span> <span class="pre">'GNO',</span> <span class="pre">'Glycan',</span> <span class="pre">'INFO',</span> <span class="pre">'Info',</span> <span class="pre">'M',</span> <span class="pre">'MOD',</span> <span class="pre">'OBS',</span> <span class="pre">'Obs',</span> <span class="pre">'PSI-MOD',</span> <span class="pre">'R',</span> <span class="pre">'RESID',</span> <span class="pre">'U',</span> <span class="pre">'Unimod',</span> <span class="pre">'X',</span> <span class="pre">'XL',</span> <span class="pre">'XL-MOD',</span> <span class="pre">'XLMOD'}</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.KNOWN_SOURCES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.ambiguity_group">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ambiguity_group</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.ambiguity_group" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.crosslink_id">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">crosslink_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.crosslink_id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.info_tags">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">info_tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.ModificationValue.info_tags" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_ambiguity_ref">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_ambiguity_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_ambiguity_ref" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_branch">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_branch</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_branch" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_branch_ref">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_branch_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_branch_ref" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_crosslink_ref">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_crosslink_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_crosslink_ref" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.mass">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mass</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.mass" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.observed_mass">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">observed_mass</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.observed_mass" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.pipe_values">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipe_values</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#sequal.modification.PipeValue" title="sequal.modification.PipeValue"><span class="pre">PipeValue</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.ModificationValue.pipe_values" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.primary_value">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">primary_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.primary_value" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.source">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.source" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.synonyms">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">synonyms</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.ModificationValue.synonyms" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.ModificationValue.to_string">
+<span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationValue.to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationValue.to_string" title="Link to this definition"></a></dt>
+<dd><p>Convert to string representation for ProForma output.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.modification.</span></span><span class="sig-name descname"><span class="pre">PipeValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">original_value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#PipeValue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.PipeValue" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Represents a single pipe-separated value in a modification.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.AMBIGUITY">
+<span class="sig-name descname"><span class="pre">AMBIGUITY</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'ambiguity'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.AMBIGUITY" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.BRANCH">
+<span class="sig-name descname"><span class="pre">BRANCH</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'branch'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.BRANCH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.CROSSLINK">
+<span class="sig-name descname"><span class="pre">CROSSLINK</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'crosslink'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.CROSSLINK" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.FORMULA">
+<span class="sig-name descname"><span class="pre">FORMULA</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'formula'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.FORMULA" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.GAP">
+<span class="sig-name descname"><span class="pre">GAP</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gap'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.GAP" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.GLYCAN">
+<span class="sig-name descname"><span class="pre">GLYCAN</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'glycan'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.GLYCAN" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.INFO_TAG">
+<span class="sig-name descname"><span class="pre">INFO_TAG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'info_tag'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.INFO_TAG" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.MASS">
+<span class="sig-name descname"><span class="pre">MASS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'mass'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.MASS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.OBSERVED_MASS">
+<span class="sig-name descname"><span class="pre">OBSERVED_MASS</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'observed_mass'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.OBSERVED_MASS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.SYNONYM">
+<span class="sig-name descname"><span class="pre">SYNONYM</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'synonym'</span></em><a class="headerlink" href="#sequal.modification.PipeValue.SYNONYM" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.assign_type">
+<span class="sig-name descname"><span class="pre">assign_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#PipeValue.assign_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.PipeValue.assign_type" title="Link to this definition"></a></dt>
+<dd><p>Assign a type to the PipeValue.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="sequal.modification.PipeValue.type">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.PipeValue.type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="mass_spectrometry.html" class="btn btn-neutral float-left" title="mass_spectrometry" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="proforma.html" class="btn btn-neutral float-right" title="proforma" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Toan K. Phung.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

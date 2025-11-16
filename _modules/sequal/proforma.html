@@ -1,0 +1,996 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>sequal.proforma &mdash; sequal 2.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=20623aea"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            sequal
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../amino_acid.html">amino_acid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../base_block.html">base_block</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ion.html">ion</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mass.html">mass</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../mass_spectrometry.html">mass_spectrometry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modification.html">modification</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../proforma.html">proforma</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../resources.html">resources</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../sequence.html">sequence</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">sequal</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">sequal.proforma</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for sequal.proforma</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">sequal.modification</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalModification</span><span class="p">,</span> <span class="n">Modification</span><span class="p">,</span> <span class="n">ModificationValue</span>
+
+
+<div class="viewcode-block" id="ProFormaParser">
+<a class="viewcode-back" href="../../proforma.html#sequal.proforma.ProFormaParser">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ProFormaParser</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parser for the ProForma peptide notation format.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Regex patterns for ProForma notation components</span>
+    <span class="n">MASS_SHIFT_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^[+-]\d+(\.\d+)?$&quot;</span><span class="p">)</span>
+    <span class="n">TERMINAL_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\[([^\]]+)\]-(.+)-\[([^\]]+)\]$&quot;</span><span class="p">)</span>
+    <span class="n">N_TERMINAL_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\[([^\]]+)\]-(.+)$&quot;</span><span class="p">)</span>
+    <span class="n">C_TERMINAL_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^(.+)-\[([^\]]+)\]$&quot;</span><span class="p">)</span>
+    <span class="n">CROSSLINK_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^([^#]+)#(XL[A-Za-z0-9]+)$&quot;</span><span class="p">)</span>
+    <span class="n">CROSSLINK_REF_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^#(XL[A-Za-z0-9]+)$&quot;</span><span class="p">)</span>
+    <span class="n">BRANCH_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^([^#]+)#BRANCH$&quot;</span><span class="p">)</span>
+    <span class="n">BRANCH_REF_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^#BRANCH$&quot;</span><span class="p">)</span>
+    <span class="n">UNKNOWN_POSITION_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\[([^\]]+)\])(\^(\d+))?(\?)&quot;</span><span class="p">)</span>
+    <span class="n">CHARGE_PATTERN</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;/(-?\d+)(?:\[(.*?)\])?(?=-|\Z)&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_find_balanced_paren</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Find the closing parenthesis matching the opening one at start.</span>
+
+<span class="sd">        Handles nested parentheses correctly for ProForma 2.1 named entities.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        s : str</span>
+<span class="sd">            The string to search</span>
+<span class="sd">        start : int</span>
+<span class="sd">            The position of the opening parenthesis</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        int</span>
+<span class="sd">            Position of the matching closing parenthesis, or -1 if not found</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &quot;(&gt;Simple name)&quot; → finds position 13</span>
+<span class="sd">        &quot;(&gt;Name (with parens))&quot; → finds position 19</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">start</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;(&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
+
+        <span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">and</span> <span class="n">count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;(&quot;</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">s</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;)&quot;</span><span class="p">:</span>
+                <span class="n">count</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="o">-</span><span class="mi">1</span>
+
+<div class="viewcode-block" id="ProFormaParser.parse">
+<a class="viewcode-back" href="../../proforma.html#sequal.proforma.ProFormaParser.parse">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span>
+        <span class="n">proforma_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="nb">str</span><span class="p">,</span>
+        <span class="n">Dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Modification</span><span class="p">]],</span>
+        <span class="n">List</span><span class="p">[</span><span class="n">GlobalModification</span><span class="p">],</span>
+        <span class="n">List</span><span class="p">[</span><span class="s2">&quot;SequenceAmbiguity&quot;</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
+    <span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse a ProForma string into a base sequence and modifications.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        proforma_str : str</span>
+<span class="sd">            ProForma formatted peptide string</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Tuple[str, Dict[int, List[Modification]]]</span>
+<span class="sd">            Base sequence and modifications dictionary</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">base_sequence</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">modifications</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
+        <span class="n">global_mods</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">sequence_ambiguities</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">names</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;peptidoform_name&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;peptidoform_ion_name&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;compound_ion_name&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;(&gt;&gt;&gt;&quot;</span><span class="p">):</span>
+            <span class="n">close_idx</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_find_balanced_paren</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">close_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">names</span><span class="p">[</span><span class="s2">&quot;compound_ion_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="mi">4</span><span class="p">:</span><span class="n">close_idx</span><span class="p">]</span>
+                <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">close_idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+        <span class="k">if</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;(&gt;&gt;&quot;</span><span class="p">):</span>
+            <span class="n">close_idx</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_find_balanced_paren</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">close_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">names</span><span class="p">[</span><span class="s2">&quot;peptidoform_ion_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="n">close_idx</span><span class="p">]</span>
+                <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">close_idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+        <span class="k">if</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;(&gt;&quot;</span><span class="p">):</span>
+            <span class="n">close_idx</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_find_balanced_paren</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">close_idx</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">names</span><span class="p">[</span><span class="s2">&quot;peptidoform_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="n">close_idx</span><span class="p">]</span>
+                <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">close_idx</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+        <span class="k">while</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;&lt;&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;&lt;[&quot;</span><span class="p">):</span>
+                <span class="n">closing_bracket</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">closing_bracket</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unclosed square bracket in global modification&quot;</span><span class="p">)</span>
+                <span class="n">end_bracket</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;&gt;&quot;</span><span class="p">,</span> <span class="n">closing_bracket</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">end_bracket</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;&gt;&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">end_bracket</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unclosed global modification angle bracket&quot;</span><span class="p">)</span>
+
+            <span class="n">global_mod_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">end_bracket</span><span class="p">]</span>
+            <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">end_bracket</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>  <span class="c1"># Remove processed part</span>
+
+            <span class="k">if</span> <span class="s2">&quot;@&quot;</span> <span class="ow">in</span> <span class="n">global_mod_str</span><span class="p">:</span>
+                <span class="c1"># Fixed protein modification</span>
+                <span class="n">mod_part</span><span class="p">,</span> <span class="n">targets</span> <span class="o">=</span> <span class="n">global_mod_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;@&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">mod_part</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">mod_part</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;]&quot;</span><span class="p">):</span>
+                    <span class="n">mod_value</span> <span class="o">=</span> <span class="n">mod_part</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Remove brackets</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">mod_value</span> <span class="o">=</span> <span class="n">mod_part</span>
+
+                <span class="n">target_list</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">has_terminal_targets</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">targets</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">):</span>
+                    <span class="n">target</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+                    <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">in</span> <span class="n">target</span><span class="p">:</span>
+                        <span class="n">has_terminal_targets</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="n">term_part</span><span class="p">,</span> <span class="n">aa_part</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                        <span class="n">target_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                            <span class="p">{</span>
+                                <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;terminal_specific&quot;</span><span class="p">,</span>
+                                <span class="s2">&quot;terminal&quot;</span><span class="p">:</span> <span class="n">term_part</span><span class="p">,</span>
+                                <span class="s2">&quot;amino_acid&quot;</span><span class="p">:</span> <span class="n">aa_part</span><span class="p">,</span>
+                            <span class="p">}</span>
+                        <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">target</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;N-term&quot;</span><span class="p">,</span> <span class="s2">&quot;C-term&quot;</span><span class="p">]:</span>
+                        <span class="n">has_terminal_targets</span> <span class="o">=</span> <span class="kc">True</span>
+                        <span class="n">target_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;terminal&quot;</span><span class="p">,</span> <span class="s2">&quot;terminal&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">})</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">has_terminal_targets</span><span class="p">:</span>
+                            <span class="n">target_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                                <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;amino_acid&quot;</span><span class="p">,</span> <span class="s2">&quot;residue&quot;</span><span class="p">:</span> <span class="n">target</span><span class="p">}</span>
+                            <span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">target_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+
+                <span class="n">global_mods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GlobalModification</span><span class="p">(</span><span class="n">mod_value</span><span class="p">,</span> <span class="n">target_list</span><span class="p">,</span> <span class="s2">&quot;fixed&quot;</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Isotope labeling</span>
+                <span class="n">global_mods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GlobalModification</span><span class="p">(</span><span class="n">global_mod_str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;isotope&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="s2">&quot;?&quot;</span> <span class="ow">in</span> <span class="n">proforma_str</span><span class="p">:</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">unknown_pos_mods</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">):</span>
+                <span class="c1"># If not a bracket, check if we&#39;ve collected unknown position mods</span>
+                <span class="k">if</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">unknown_pos_mods</span>
+                        <span class="ow">and</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span>
+                        <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;?&quot;</span>
+                    <span class="p">):</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">unknown_pos_mods</span><span class="p">)</span>
+                        <span class="c1"># Add all collected mods to position -4</span>
+                        <span class="k">for</span> <span class="n">mod_str</span> <span class="ow">in</span> <span class="n">unknown_pos_mods</span><span class="p">:</span>
+                            <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                                <span class="n">mod_str</span><span class="p">,</span> <span class="n">is_unknown_position</span><span class="o">=</span><span class="kc">True</span>
+                            <span class="p">)</span>
+                            <span class="n">modifications</span><span class="p">[</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+                        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>  <span class="c1"># Move past the question mark</span>
+                    <span class="n">unknown_pos_mods</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Reset collection</span>
+                    <span class="k">break</span>  <span class="c1"># Done with unknown position section</span>
+
+                <span class="c1"># Find matching closing bracket</span>
+                <span class="n">bracket_count</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bracket_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                        <span class="n">bracket_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                        <span class="n">bracket_count</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="k">if</span> <span class="n">bracket_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unclosed bracket at position </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">mod_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Extract modification string</span>
+
+                <span class="c1"># Check if followed by caret notation</span>
+                <span class="n">count</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;^&quot;</span><span class="p">:</span>
+                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">num_start</span> <span class="o">=</span> <span class="n">j</span>
+                    <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                        <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">j</span> <span class="o">&gt;</span> <span class="n">num_start</span><span class="p">:</span>
+                        <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">[</span><span class="n">num_start</span><span class="p">:</span><span class="n">j</span><span class="p">])</span>
+
+                <span class="c1"># Add to our collection of mods that might be unknown position</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">count</span><span class="p">):</span>
+                    <span class="n">unknown_pos_mods</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod_str</span><span class="p">)</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>  <span class="c1"># Move to next character (might be ? or another [)</span>
+            <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span><span class="p">:</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unclosed curly brace at position </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="n">mod_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">j</span><span class="p">]</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">mod_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Glycan:&quot;</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Labile modification must start with &#39;Glycan:&#39;, found: </span><span class="si">{</span><span class="n">mod_str</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span><span class="n">mod_str</span><span class="p">,</span> <span class="n">is_labile</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">modifications</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>  <span class="c1"># Store labile modifications at position -3</span>
+            <span class="n">i</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+
+        <span class="k">if</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;[&quot;</span><span class="p">):</span>
+            <span class="n">bracket_level</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">terminator_pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+            <span class="c1"># Find the terminal hyphen that&#39;s outside all brackets</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                    <span class="n">bracket_level</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                    <span class="n">bracket_level</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="n">bracket_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">terminator_pos</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">terminator_pos</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">n_terminal_part</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[:</span><span class="n">terminator_pos</span><span class="p">]</span>
+                <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">terminator_pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+                <span class="c1"># Parse N-terminal modifications</span>
+                <span class="n">current_pos</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">while</span> <span class="n">current_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_terminal_part</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">n_terminal_part</span><span class="p">[</span><span class="n">current_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                        <span class="n">bracket_depth</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">end_pos</span> <span class="o">=</span> <span class="n">current_pos</span> <span class="o">+</span> <span class="mi">1</span>
+
+                        <span class="c1"># Find matching closing bracket</span>
+                        <span class="k">while</span> <span class="n">end_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">n_terminal_part</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bracket_depth</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">n_terminal_part</span><span class="p">[</span><span class="n">end_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                                <span class="n">bracket_depth</span> <span class="o">+=</span> <span class="mi">1</span>
+                            <span class="k">if</span> <span class="n">n_terminal_part</span><span class="p">[</span><span class="n">end_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                                <span class="n">bracket_depth</span> <span class="o">-=</span> <span class="mi">1</span>
+                            <span class="n">end_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                        <span class="k">if</span> <span class="n">bracket_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">mod_string</span> <span class="o">=</span> <span class="n">n_terminal_part</span><span class="p">[</span><span class="n">current_pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">end_pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                            <span class="n">n_term_mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                                <span class="n">mod_string</span><span class="p">,</span> <span class="n">is_terminal</span><span class="o">=</span><span class="kc">True</span>
+                            <span class="p">)</span>
+                            <span class="n">modifications</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">n_term_mod</span><span class="p">)</span>
+
+                        <span class="n">current_pos</span> <span class="o">=</span> <span class="n">end_pos</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">current_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">proforma_str</span><span class="p">,</span> <span class="n">charge</span><span class="p">,</span> <span class="n">species</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">parse_charge_info</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span>
+
+        <span class="c1"># Check for C-terminal modifications</span>
+        <span class="k">if</span> <span class="s2">&quot;-&quot;</span> <span class="ow">in</span> <span class="n">proforma_str</span><span class="p">:</span>
+            <span class="n">bracket_level</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">terminator_pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+
+            <span class="c1"># Find the terminal hyphen that&#39;s outside all brackets, scanning from right to left</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                    <span class="n">bracket_level</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                    <span class="n">bracket_level</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span> <span class="ow">and</span> <span class="n">bracket_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">terminator_pos</span> <span class="o">=</span> <span class="n">i</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">terminator_pos</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">c_terminal_part</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">terminator_pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+                <span class="n">proforma_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[:</span><span class="n">terminator_pos</span><span class="p">]</span>
+
+                <span class="c1"># Parse C-terminal modifications</span>
+                <span class="n">current_pos</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="k">while</span> <span class="n">current_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">c_terminal_part</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">c_terminal_part</span><span class="p">[</span><span class="n">current_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                        <span class="n">bracket_depth</span> <span class="o">=</span> <span class="mi">1</span>
+                        <span class="n">end_pos</span> <span class="o">=</span> <span class="n">current_pos</span> <span class="o">+</span> <span class="mi">1</span>
+
+                        <span class="c1"># Find matching closing bracket</span>
+                        <span class="k">while</span> <span class="n">end_pos</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">c_terminal_part</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bracket_depth</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">c_terminal_part</span><span class="p">[</span><span class="n">end_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                                <span class="n">bracket_depth</span> <span class="o">+=</span> <span class="mi">1</span>
+                            <span class="k">if</span> <span class="n">c_terminal_part</span><span class="p">[</span><span class="n">end_pos</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                                <span class="n">bracket_depth</span> <span class="o">-=</span> <span class="mi">1</span>
+                            <span class="n">end_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                        <span class="k">if</span> <span class="n">bracket_depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                            <span class="n">mod_string</span> <span class="o">=</span> <span class="n">c_terminal_part</span><span class="p">[</span><span class="n">current_pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">end_pos</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                            <span class="n">c_term_mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                                <span class="n">mod_string</span><span class="p">,</span> <span class="n">is_terminal</span><span class="o">=</span><span class="kc">True</span>
+                            <span class="p">)</span>
+                            <span class="n">modifications</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c_term_mod</span><span class="p">)</span>
+
+                        <span class="n">current_pos</span> <span class="o">=</span> <span class="n">end_pos</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">current_pos</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">next_mod_is_gap</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">range_stack</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Stack to keep track of ranges</span>
+        <span class="n">current_position</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">):</span>
+            <span class="n">char</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;(?&quot;</span><span class="p">:</span>
+                <span class="n">closing_paren</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">closing_paren</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unclosed sequence ambiguity parenthesis&quot;</span><span class="p">)</span>
+
+                <span class="c1"># Extract ambiguous sequence</span>
+                <span class="n">ambiguous_seq</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span> <span class="p">:</span> <span class="n">closing_paren</span><span class="p">]</span>
+                <span class="c1"># Add to ambiguities list with current position</span>
+                <span class="n">sequence_ambiguities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">SequenceAmbiguity</span><span class="p">(</span><span class="n">ambiguous_seq</span><span class="p">,</span> <span class="n">current_position</span><span class="p">)</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Skip past the ambiguity notation</span>
+                <span class="n">i</span> <span class="o">=</span> <span class="n">closing_paren</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;(&quot;</span><span class="p">:</span>
+                <span class="c1"># Start of a range</span>
+                <span class="n">range_stack</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">base_sequence</span><span class="p">))</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">continue</span>
+
+            <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;)&quot;</span><span class="p">:</span>
+                <span class="c1"># End of a range</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">range_stack</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unmatched closing parenthesis&quot;</span><span class="p">)</span>
+
+                <span class="n">range_start</span> <span class="o">=</span> <span class="n">range_stack</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+                <span class="n">range_end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">base_sequence</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+
+                <span class="c1"># Look for modification after the range</span>
+                <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                    <span class="c1"># Extract the modification that applies to the range</span>
+                    <span class="n">mod_start</span> <span class="o">=</span> <span class="n">j</span>
+                    <span class="n">bracket_count</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bracket_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                            <span class="n">bracket_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                            <span class="n">bracket_count</span> <span class="o">-=</span> <span class="mi">1</span>
+                        <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="k">if</span> <span class="n">bracket_count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="c1"># Get modification string and create modification</span>
+                        <span class="n">mod_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">mod_start</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+                        <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                            <span class="n">mod_str</span><span class="p">,</span>
+                            <span class="n">in_range</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                            <span class="n">range_start</span><span class="o">=</span><span class="n">range_start</span><span class="p">,</span>
+                            <span class="n">range_end</span><span class="o">=</span><span class="n">range_end</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+                        <span class="c1"># Apply to all positions in range</span>
+                        <span class="k">for</span> <span class="n">pos</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mod</span><span class="o">.</span><span class="n">range_start</span><span class="p">,</span> <span class="n">mod</span><span class="o">.</span><span class="n">range_end</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                            <span class="n">modifications</span><span class="p">[</span><span class="n">pos</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span>  <span class="c1"># Skip past the modification</span>
+                <span class="k">continue</span>
+
+            <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                <span class="c1"># Parse modification in square brackets</span>
+                <span class="n">bracket_count</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="n">j</span> <span class="o">=</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span>
+                <span class="k">while</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">bracket_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                        <span class="n">bracket_count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">elif</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                        <span class="n">bracket_count</span> <span class="o">-=</span> <span class="mi">1</span>
+                    <span class="n">j</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="k">if</span> <span class="n">bracket_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unclosed square bracket at position </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">j</span> <span class="o">-=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unclosed square bracket at position </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">mod_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">j</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">next_mod_is_gap</span><span class="p">:</span>
+                    <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span><span class="n">mod_str</span><span class="p">,</span> <span class="n">is_gap</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                    <span class="n">next_mod_is_gap</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="c1"># Check if this is a crosslink reference</span>
+                <span class="k">elif</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">CROSSLINK_REF_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">mod_str</span><span class="p">):</span>
+                    <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                        <span class="n">mod_str</span><span class="p">,</span> <span class="n">is_crosslink_ref</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">)</span>
+                <span class="k">elif</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">BRANCH_REF_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">mod_str</span><span class="p">):</span>
+                    <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                        <span class="n">mod_str</span><span class="p">,</span> <span class="n">is_branch_ref</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Check for crosslink or branch notation within the modification</span>
+                    <span class="n">crosslink_match</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">CROSSLINK_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">mod_str</span><span class="p">)</span>
+                    <span class="n">branch_match</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">BRANCH_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">mod_str</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">crosslink_match</span><span class="p">:</span>
+                        <span class="n">mod_base</span><span class="p">,</span> <span class="n">crosslink_id</span> <span class="o">=</span> <span class="n">crosslink_match</span><span class="o">.</span><span class="n">groups</span><span class="p">()</span>
+                        <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                            <span class="n">mod_str</span><span class="p">,</span> <span class="n">crosslink_id</span><span class="o">=</span><span class="n">crosslink_id</span>
+                        <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">branch_match</span><span class="p">:</span>
+                        <span class="n">mod_base</span> <span class="o">=</span> <span class="n">branch_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span>
+                            <span class="n">mod_str</span><span class="p">,</span> <span class="n">is_branch</span><span class="o">=</span><span class="kc">True</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span><span class="n">mod_str</span><span class="p">)</span>
+
+                <span class="c1"># Add modification to the last amino acid</span>
+                <span class="k">if</span> <span class="n">base_sequence</span><span class="p">:</span>
+                    <span class="n">modifications</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">base_sequence</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;{&quot;</span><span class="p">:</span>
+                <span class="c1"># Parse ambiguous modification in curly braces</span>
+                <span class="n">j</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;}&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">j</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unclosed curly brace at position </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+                <span class="n">mod_str</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:</span> <span class="n">j</span><span class="p">]</span>
+                <span class="n">mod</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_create_modification</span><span class="p">(</span><span class="n">mod_str</span><span class="p">,</span> <span class="n">is_ambiguous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+                <span class="c1"># Add ambiguous modification to the last amino acid</span>
+                <span class="k">if</span> <span class="n">base_sequence</span><span class="p">:</span>
+                    <span class="n">modifications</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">base_sequence</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mod</span><span class="p">)</span>
+
+                <span class="n">i</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Regular amino acid</span>
+                <span class="n">base_sequence</span> <span class="o">+=</span> <span class="n">char</span>
+                <span class="n">is_gap</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;X&quot;</span>
+                    <span class="ow">and</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">)</span>
+                    <span class="ow">and</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">is_gap</span><span class="p">:</span>
+                    <span class="n">next_mod_is_gap</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">base_sequence</span><span class="p">,</span>
+            <span class="n">modifications</span><span class="p">,</span>
+            <span class="n">global_mods</span><span class="p">,</span>
+            <span class="n">sequence_ambiguities</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">charge</span><span class="p">,</span> <span class="n">species</span><span class="p">),</span>
+            <span class="n">names</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ProFormaParser.parse_charge_info">
+<a class="viewcode-back" href="../../proforma.html#sequal.proforma.ProFormaParser.parse_charge_info">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_charge_info</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse charge information from a ProForma string without using regex.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        proforma_str : str</span>
+<span class="sd">            The ProForma string to parse</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        tuple</span>
+<span class="sd">            (updated_proforma_str, charge_value, ionic_species)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">proforma_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">proforma_str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="n">charge_pos</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">bracket_level</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">char</span> <span class="ow">in</span> <span class="s2">&quot;[(&quot;</span><span class="p">:</span>
+                <span class="n">bracket_level</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">char</span> <span class="ow">in</span> <span class="s2">&quot;])&quot;</span><span class="p">:</span>
+                <span class="n">bracket_level</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;/&quot;</span> <span class="ow">and</span> <span class="n">bracket_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">charge_pos</span> <span class="o">=</span> <span class="n">i</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">charge_pos</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">proforma_str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="n">before_charge</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[:</span><span class="n">charge_pos</span><span class="p">]</span>
+        <span class="n">after_charge</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="p">[</span><span class="n">charge_pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+        <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sign</span> <span class="o">=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">after_charge</span><span class="p">)</span> <span class="ow">and</span> <span class="n">after_charge</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;-&quot;</span><span class="p">:</span>
+            <span class="n">sign</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">start_digit</span> <span class="o">=</span> <span class="n">i</span>
+        <span class="k">while</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">after_charge</span><span class="p">)</span> <span class="ow">and</span> <span class="n">after_charge</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">start_digit</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">proforma_str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="n">charge_value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">after_charge</span><span class="p">[</span><span class="n">start_digit</span><span class="p">:</span><span class="n">i</span><span class="p">])</span> <span class="o">*</span> <span class="n">sign</span>
+
+        <span class="n">remaining</span> <span class="o">=</span> <span class="n">after_charge</span><span class="p">[</span><span class="n">i</span><span class="p">:]</span>
+        <span class="n">ionic_species</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="n">remaining</span> <span class="ow">and</span> <span class="n">remaining</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+            <span class="c1"># Find the matching closing bracket</span>
+            <span class="n">bracket_level</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">end_pos</span> <span class="o">=</span> <span class="mi">0</span>
+
+            <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">char</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">remaining</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;[&quot;</span><span class="p">:</span>
+                    <span class="n">bracket_level</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">elif</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">&quot;]&quot;</span><span class="p">:</span>
+                    <span class="n">bracket_level</span> <span class="o">-=</span> <span class="mi">1</span>
+
+                <span class="k">if</span> <span class="n">bracket_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">end_pos</span> <span class="o">=</span> <span class="n">j</span>
+                    <span class="k">break</span>
+
+            <span class="k">if</span> <span class="n">end_pos</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">ionic_species</span> <span class="o">=</span> <span class="n">remaining</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">end_pos</span><span class="p">]</span>
+                <span class="n">remaining</span> <span class="o">=</span> <span class="n">remaining</span><span class="p">[</span><span class="n">end_pos</span> <span class="o">+</span> <span class="mi">1</span> <span class="p">:]</span>
+
+        <span class="n">result_str</span> <span class="o">=</span> <span class="n">before_charge</span>
+        <span class="k">if</span> <span class="n">remaining</span><span class="p">:</span>
+            <span class="n">result_str</span> <span class="o">+=</span> <span class="n">remaining</span>
+
+        <span class="k">return</span> <span class="n">result_str</span><span class="p">,</span> <span class="n">charge_value</span><span class="p">,</span> <span class="n">ionic_species</span></div>
+
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_placement_controls</span><span class="p">(</span><span class="n">mod_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse placement control tags from a modification string.</span>
+
+<span class="sd">        ProForma 2.1 Section 11.2: Placement controls for modifications of unknown position.</span>
+
+<span class="sd">        Supported tags:</span>
+<span class="sd">        - Position:&lt;positions&gt; - List of allowed positions</span>
+<span class="sd">        - Limit:&lt;number&gt; - Max occurrences per position</span>
+<span class="sd">        - CoMKP or ColocaliseModificationsOfKnownPosition - Can colocalize with known mods</span>
+<span class="sd">        - CoMUP or ColocaliseModificationsOfUnknownPosition - Can colocalize with unknown mods</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mod_str : str</span>
+<span class="sd">            Modification string that may contain placement controls</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Tuple[str, Dict]</span>
+<span class="sd">            (cleaned_mod_str, controls_dict) where cleaned_mod_str has controls removed</span>
+<span class="sd">            and controls_dict contains:</span>
+<span class="sd">            - position_constraint: List[str] or None</span>
+<span class="sd">            - limit_per_position: int (default 1)</span>
+<span class="sd">            - colocalize_known: bool</span>
+<span class="sd">            - colocalize_unknown: bool</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &quot;[Oxidation|Position:M]&quot; → (&quot;Oxidation&quot;, {position_constraint: [&quot;M&quot;], ...})</span>
+<span class="sd">        &quot;[Oxidation|Limit:2]&quot; → (&quot;Oxidation&quot;, {limit_per_position: 2, ...})</span>
+<span class="sd">        &quot;[Oxidation|CoMKP]&quot; → (&quot;Oxidation&quot;, {colocalize_known: True, ...})</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;position_constraint&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">&quot;limit_per_position&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">&quot;colocalize_known&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">&quot;colocalize_unknown&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="s2">&quot;|&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">mod_str</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">mod_str</span><span class="p">,</span> <span class="n">controls</span>
+
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">mod_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;|&quot;</span><span class="p">)</span>
+        <span class="n">mod_parts</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">part</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parts</span><span class="p">):</span>
+            <span class="n">part</span> <span class="o">=</span> <span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Position:&quot;</span><span class="p">):</span>
+                <span class="n">positions_str</span> <span class="o">=</span> <span class="n">part</span><span class="p">[</span><span class="mi">9</span><span class="p">:]</span>
+                <span class="n">controls</span><span class="p">[</span><span class="s2">&quot;position_constraint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">p</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">positions_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="k">elif</span> <span class="n">part</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Limit:&quot;</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">controls</span><span class="p">[</span><span class="s2">&quot;limit_per_position&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">part</span><span class="p">[</span><span class="mi">6</span><span class="p">:])</span>
+                <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+                    <span class="n">mod_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">part</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;CoMKP&quot;</span><span class="p">,</span> <span class="s2">&quot;ColocaliseModificationsOfKnownPosition&quot;</span><span class="p">):</span>
+                <span class="n">controls</span><span class="p">[</span><span class="s2">&quot;colocalize_known&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">elif</span> <span class="n">part</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;CoMUP&quot;</span><span class="p">,</span> <span class="s2">&quot;ColocaliseModificationsOfUnknownPosition&quot;</span><span class="p">):</span>
+                <span class="n">controls</span><span class="p">[</span><span class="s2">&quot;colocalize_unknown&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">mod_parts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">part</span><span class="p">)</span>
+
+        <span class="n">cleaned_mod_str</span> <span class="o">=</span> <span class="s2">&quot;|&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mod_parts</span><span class="p">)</span> <span class="k">if</span> <span class="n">mod_parts</span> <span class="k">else</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">cleaned_mod_str</span><span class="p">,</span> <span class="n">controls</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_is_ion_type_modification</span><span class="p">(</span><span class="n">mod_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if a modification represents an ion type.</span>
+
+<span class="sd">        ProForma 2.1 Section 11.6: MSn precursor ions are indicated using</span>
+<span class="sd">        ion type modifications like &#39;a-type-ion&#39;, &#39;b-type-ion&#39;, etc.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mod_str : str</span>
+<span class="sd">            Modification string to check</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if modification is an ion type</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &quot;a-type-ion&quot; → True</span>
+<span class="sd">        &quot;b-type-ion&quot; → True</span>
+<span class="sd">        &quot;UNIMOD:140&quot; → True (a-type-ion)</span>
+<span class="sd">        &quot;UNIMOD:2132&quot; → True (b-type-ion)</span>
+<span class="sd">        &quot;Oxidation&quot; → False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mod_str_lower</span> <span class="o">=</span> <span class="n">mod_str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Check for -type-ion suffix</span>
+        <span class="k">if</span> <span class="n">mod_str_lower</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;-type-ion&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="c1"># Check for known Unimod ion type IDs</span>
+        <span class="c1"># UNIMOD:140 = a-type-ion, UNIMOD:2132 = b-type-ion, etc.</span>
+        <span class="n">ion_type_unimod_ids</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;140&quot;</span><span class="p">,</span>  <span class="c1"># a-type-ion</span>
+            <span class="s2">&quot;2132&quot;</span><span class="p">,</span>  <span class="c1"># b-type-ion</span>
+            <span class="s2">&quot;4&quot;</span><span class="p">,</span>  <span class="c1"># c-type-ion</span>
+            <span class="s2">&quot;24&quot;</span><span class="p">,</span>  <span class="c1"># x-type-ion</span>
+            <span class="s2">&quot;2133&quot;</span><span class="p">,</span>  <span class="c1"># y-type-ion</span>
+            <span class="s2">&quot;23&quot;</span><span class="p">,</span>  <span class="c1"># z-type-ion</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">mod_str</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">&quot;UNIMOD:&quot;</span><span class="p">,</span> <span class="s2">&quot;U:&quot;</span><span class="p">)):</span>
+            <span class="n">unimod_id</span> <span class="o">=</span> <span class="n">mod_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">unimod_id</span> <span class="ow">in</span> <span class="n">ion_type_unimod_ids</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_modification</span><span class="p">(</span>
+        <span class="n">mod_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">is_terminal</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_ambiguous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_labile</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_unknown_position</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">crosslink_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">is_crosslink_ref</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_branch</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_branch_ref</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_gap</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">in_range</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">range_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">range_end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Modification</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a Modification object from a ProForma modification string.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        mod_str : str</span>
+<span class="sd">            Modification string from ProForma notation</span>
+<span class="sd">        is_terminal : bool</span>
+<span class="sd">            Whether this is a terminal modification</span>
+<span class="sd">        is_ambiguous : bool</span>
+<span class="sd">            Whether this is an ambiguous modification</span>
+<span class="sd">        crosslink_id : str, optional</span>
+<span class="sd">            The crosslink identifier, if applicable</span>
+<span class="sd">        is_crosslink_ref : bool</span>
+<span class="sd">            Whether this is a crosslink reference</span>
+<span class="sd">        is_branch : bool</span>
+<span class="sd">            Whether this is a branch modification</span>
+<span class="sd">        is_branch_ref : bool</span>
+<span class="sd">            Whether this is a branch reference</span>
+<span class="sd">        is_gap : bool</span>
+<span class="sd">            Whether this is a gap modification</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Modification</span>
+<span class="sd">            Created modification object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cleaned_mod_str</span><span class="p">,</span> <span class="n">placement_controls</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_parse_placement_controls</span><span class="p">(</span>
+            <span class="n">mod_str</span>
+        <span class="p">)</span>
+        <span class="n">mod_value</span> <span class="o">=</span> <span class="n">ModificationValue</span><span class="p">(</span><span class="n">cleaned_mod_str</span><span class="p">)</span>
+        <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;static&quot;</span>
+        <span class="k">if</span> <span class="n">is_terminal</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;terminal&quot;</span>
+        <span class="k">elif</span> <span class="n">is_ambiguous</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;ambiguous&quot;</span>
+        <span class="k">elif</span> <span class="n">is_labile</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;labile&quot;</span>
+        <span class="k">elif</span> <span class="n">is_unknown_position</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;unknown_position&quot;</span>
+        <span class="k">elif</span> <span class="n">crosslink_id</span> <span class="ow">or</span> <span class="n">is_crosslink_ref</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;crosslink&quot;</span>
+        <span class="k">elif</span> <span class="n">is_branch</span> <span class="ow">or</span> <span class="n">is_branch_ref</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;branch&quot;</span>
+        <span class="k">elif</span> <span class="n">is_gap</span><span class="p">:</span>
+            <span class="n">mod_type</span> <span class="o">=</span> <span class="s2">&quot;gap&quot;</span>
+
+        <span class="n">ambiguity_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;(.+?)#([A-Za-z0-9]+)(?:\(([0-9.]+)\))?$&quot;</span><span class="p">,</span> <span class="n">cleaned_mod_str</span>
+        <span class="p">)</span>
+        <span class="n">ambiguity_ref_match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;#([A-Za-z0-9]+)(?:\(([0-9.]+)\))?$&quot;</span><span class="p">,</span> <span class="n">cleaned_mod_str</span>
+        <span class="p">)</span>
+        <span class="n">ambiguity_group</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">localization_score</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">is_ambiguity_ref</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">MASS_SHIFT_PATTERN</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">cleaned_mod_str</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="s2">&quot;#&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cleaned_mod_str</span>
+        <span class="p">):</span>
+            <span class="n">mass_value</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">cleaned_mod_str</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">is_gap</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Modification</span><span class="p">(</span>
+                    <span class="n">cleaned_mod_str</span><span class="p">,</span>
+                    <span class="n">mass</span><span class="o">=</span><span class="n">mass_value</span><span class="p">,</span>
+                    <span class="n">mod_type</span><span class="o">=</span><span class="s2">&quot;gap&quot;</span><span class="p">,</span>
+                    <span class="n">mod_value</span><span class="o">=</span><span class="n">mod_value</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">placement_controls</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">in_range</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">Modification</span><span class="p">(</span>
+                    <span class="n">cleaned_mod_str</span><span class="p">,</span>
+                    <span class="n">mass</span><span class="o">=</span><span class="n">mass_value</span><span class="p">,</span>
+                    <span class="n">mod_type</span><span class="o">=</span><span class="s2">&quot;variable&quot;</span><span class="p">,</span>
+                    <span class="n">in_range</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">range_start</span><span class="o">=</span><span class="n">range_start</span><span class="p">,</span>
+                    <span class="n">range_end</span><span class="o">=</span><span class="n">range_end</span><span class="p">,</span>
+                    <span class="n">mod_value</span><span class="o">=</span><span class="n">mod_value</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">placement_controls</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">Modification</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Mass:</span><span class="si">{</span><span class="n">cleaned_mod_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mass</span><span class="o">=</span><span class="n">mass_value</span><span class="p">,</span>
+                <span class="n">in_range</span><span class="o">=</span><span class="n">in_range</span><span class="p">,</span>
+                <span class="n">range_start</span><span class="o">=</span><span class="n">range_start</span><span class="p">,</span>
+                <span class="n">range_end</span><span class="o">=</span><span class="n">range_end</span><span class="p">,</span>
+                <span class="n">mod_value</span><span class="o">=</span><span class="n">mod_value</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">placement_controls</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="s2">&quot;#&quot;</span> <span class="ow">in</span> <span class="n">cleaned_mod_str</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_crosslink_ref</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_branch</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_branch_ref</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">crosslink_id</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">ambiguity_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ambiguity_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;XL&quot;</span><span class="p">):</span>
+                <span class="n">cleaned_mod_str</span> <span class="o">=</span> <span class="n">ambiguity_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">ambiguity_group</span> <span class="o">=</span> <span class="n">ambiguity_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ambiguity_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>  <span class="c1"># Score is present</span>
+                    <span class="n">localization_score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ambiguity_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+                <span class="n">mod</span> <span class="o">=</span> <span class="n">Modification</span><span class="p">(</span>
+                    <span class="n">cleaned_mod_str</span><span class="p">,</span>
+                    <span class="n">mod_type</span><span class="o">=</span><span class="s2">&quot;ambiguous&quot;</span><span class="p">,</span>
+                    <span class="n">ambiguity_group</span><span class="o">=</span><span class="n">ambiguity_group</span><span class="p">,</span>
+                    <span class="n">is_ambiguity_ref</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">in_range</span><span class="o">=</span><span class="n">in_range</span><span class="p">,</span>
+                    <span class="n">range_start</span><span class="o">=</span><span class="n">range_start</span><span class="p">,</span>
+                    <span class="n">range_end</span><span class="o">=</span><span class="n">range_end</span><span class="p">,</span>
+                    <span class="n">localization_score</span><span class="o">=</span><span class="n">localization_score</span><span class="p">,</span>
+                    <span class="n">mod_value</span><span class="o">=</span><span class="n">mod_value</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">placement_controls</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">mod</span>
+            <span class="k">elif</span> <span class="n">ambiguity_ref_match</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ambiguity_ref_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span>
+                <span class="s2">&quot;XL&quot;</span>
+            <span class="p">):</span>
+                <span class="n">ambiguity_group</span> <span class="o">=</span> <span class="n">ambiguity_ref_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ambiguity_ref_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>  <span class="c1"># Score is present</span>
+                    <span class="n">localization_score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">ambiguity_ref_match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+                <span class="n">mod</span> <span class="o">=</span> <span class="n">Modification</span><span class="p">(</span>
+                    <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                    <span class="n">mod_type</span><span class="o">=</span><span class="s2">&quot;ambiguous&quot;</span><span class="p">,</span>
+                    <span class="n">ambiguity_group</span><span class="o">=</span><span class="n">ambiguity_group</span><span class="p">,</span>
+                    <span class="n">is_ambiguity_ref</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">in_range</span><span class="o">=</span><span class="n">in_range</span><span class="p">,</span>
+                    <span class="n">range_start</span><span class="o">=</span><span class="n">range_start</span><span class="p">,</span>
+                    <span class="n">range_end</span><span class="o">=</span><span class="n">range_end</span><span class="p">,</span>
+                    <span class="n">localization_score</span><span class="o">=</span><span class="n">localization_score</span><span class="p">,</span>
+                    <span class="n">mod_value</span><span class="o">=</span><span class="n">mod_value</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">placement_controls</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">return</span> <span class="n">mod</span>
+
+        <span class="c1"># Check if this is an ion type modification (ProForma 2.1 Section 11.6)</span>
+        <span class="n">is_ion</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_is_ion_type_modification</span><span class="p">(</span><span class="n">cleaned_mod_str</span><span class="p">)</span>
+
+        <span class="c1"># Create the modification with appropriate attributes</span>
+        <span class="k">return</span> <span class="n">Modification</span><span class="p">(</span>
+            <span class="n">cleaned_mod_str</span><span class="p">,</span>
+            <span class="n">mod_type</span><span class="o">=</span><span class="n">mod_type</span><span class="p">,</span>
+            <span class="n">crosslink_id</span><span class="o">=</span><span class="n">crosslink_id</span><span class="p">,</span>
+            <span class="n">is_crosslink_ref</span><span class="o">=</span><span class="n">is_crosslink_ref</span><span class="p">,</span>
+            <span class="n">is_branch</span><span class="o">=</span><span class="n">is_branch</span><span class="p">,</span>
+            <span class="n">is_branch_ref</span><span class="o">=</span><span class="n">is_branch_ref</span><span class="p">,</span>
+            <span class="n">in_range</span><span class="o">=</span><span class="n">in_range</span><span class="p">,</span>
+            <span class="n">range_start</span><span class="o">=</span><span class="n">range_start</span><span class="p">,</span>
+            <span class="n">range_end</span><span class="o">=</span><span class="n">range_end</span><span class="p">,</span>
+            <span class="n">mod_value</span><span class="o">=</span><span class="n">mod_value</span><span class="p">,</span>
+            <span class="n">is_ion_type</span><span class="o">=</span><span class="n">is_ion</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">placement_controls</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="SequenceAmbiguity">
+<a class="viewcode-back" href="../../proforma.html#sequal.proforma.SequenceAmbiguity">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SequenceAmbiguity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents ambiguity in the amino acid sequence.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a sequence ambiguity.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        value : str</span>
+<span class="sd">            The ambiguous sequence possibilities</span>
+<span class="sd">        position : int</span>
+<span class="sd">            The position in the sequence where ambiguity occurs</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;SequenceAmbiguity(value=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">&#39;, position=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">position</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Toan K. Phung.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
