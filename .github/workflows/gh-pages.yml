@@ -2,8 +2,7 @@ name: GitHub Pages
 
 on:
   push:
-    branches:
-      - main
+    branches: [ master ]
 
 jobs:
   deploy:
