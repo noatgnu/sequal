@@ -75,6 +75,11 @@ class Modification(BaseBlock):
         range_end: Optional[int] = None,
         localization_score: Optional[float] = None,
         mod_value: Optional["ModificationValue"] = None,
+        position_constraint: Optional[List[str]] = None,
+        limit_per_position: int = 1,
+        colocalize_known: bool = False,
+        colocalize_unknown: bool = False,
+        is_ion_type: bool = False,
     ):
         self._source = None
         self._original_value = value
@@ -89,6 +94,11 @@ class Modification(BaseBlock):
         self.range_end = range_end
         self.localization_score = localization_score
         self._mod_value = mod_value or ModificationValue(value, mass=mass)
+        self.position_constraint = position_constraint
+        self.limit_per_position = limit_per_position
+        self.colocalize_known = colocalize_known
+        self.colocalize_unknown = colocalize_unknown
+        self.is_ion_type = is_ion_type
 
         if value.startswith("#") and is_crosslink_ref:
             self._crosslink_id = value[1:]
@@ -231,19 +241,32 @@ class Modification(BaseBlock):
 
     @staticmethod
     def _validate_glycan(glycan: str) -> bool:
-        """Validate a glycan string per ProForma specification."""
+        """
+        Validate a glycan string per ProForma specification.
+
+        Supports both standard monosaccharides and custom formulas in curly braces.
+        ProForma 2.1 Section 10.2: Custom monosaccharides can be defined using {formula}
+        """
         glycan_clean = glycan.replace(" ", "")
         monos = list(monosaccharides)
         monos.sort(key=len, reverse=True)
         mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
         i = 0
         while i < len(glycan_clean):
-            match = re.match(mono_pattern, glycan_clean[i:])
-            if not match:
-                return False
-            i += len(match.group(0))
+            if glycan_clean[i] == "{":
+                close_brace = glycan_clean.find("}", i)
+                if close_brace == -1:
+                    return False
+                i = close_brace + 1
+                while i < len(glycan_clean) and glycan_clean[i].isdigit():
+                    i += 1
+            else:
+                match = re.match(mono_pattern, glycan_clean[i:])
+                if not match:
+                    return False
+                i += len(match.group(0))
 
-        return i == len(glycan_clean)  # Ensure we consumed the entire string
+        return i == len(glycan_clean)
 
     @property
     def mod_value(self) -> Optional["ModificationValue"]:
@@ -436,6 +459,8 @@ class Modification(BaseBlock):
                             seen.add(f"{pv.mass}")
                     else:
                         mod_part += f"{pv.value}"
+                        if pv.charge is not None and pv.source.upper() == "FORMULA":
+                            mod_part += f":z{pv.charge}"
                 else:
                     if pv.mass:
                         if pv.mass > 0:
@@ -465,7 +490,18 @@ class Modification(BaseBlock):
                 parts.append(mod_part)
                 seen.add(mod_part)
 
-            return "|".join(parts)
+            result = "|".join(parts)
+
+            if self.position_constraint:
+                result += f"|Position:{','.join(self.position_constraint)}"
+            if self.limit_per_position > 1:
+                result += f"|Limit:{self.limit_per_position}"
+            if self.colocalize_known:
+                result += "|CoMKP"
+            if self.colocalize_unknown:
+                result += "|CoMUP"
+
+            return result
         else:
             if self.mass is not None and self.value.startswith(("+", "-")):
                 return str(self.mass)
@@ -671,7 +707,22 @@ class GlobalModification(Modification):
                 mod_str = f"[{mod_value}]"
             else:
                 mod_str = mod_value
-            targets = ",".join(self.target_residues)
+
+            target_strings = []
+            for target in self.target_residues:
+                if isinstance(target, dict):
+                    if target.get("type") == "terminal_specific":
+                        target_strings.append(
+                            f"{target['terminal']}:{target['amino_acid']}"
+                        )
+                    elif target.get("type") == "terminal":
+                        target_strings.append(target["terminal"])
+                    elif target.get("type") == "amino_acid":
+                        target_strings.append(target["residue"])
+                else:
+                    target_strings.append(target)
+
+            targets = ",".join(target_strings)
             return f"<{mod_str}@{targets}>"
 
     def __repr__(self) -> str:
@@ -715,6 +766,8 @@ class PipeValue:
         self.observed_mass = None
         self.is_valid_glycan = False
         self.is_valid_formula = False
+        self.charge = None
+        self.charge_value = 0
         self._extract_properties()
         self.assigned_types: List[str] = []
 
@@ -921,9 +974,26 @@ class ModificationValue:
                         pipe_val.source = self._source
                         pipe_val.is_valid_glycan = True
                     elif self._source.upper() == "FORMULA":
-                        pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
+                        formula_str = parts[1]
+                        charge_str = None
+                        charge_val = 0
+
+                        if ":z" in formula_str:
+                            formula_parts = formula_str.rsplit(":z", 1)
+                            formula_str = formula_parts[0]
+                            charge_str = formula_parts[1]
+                            try:
+                                charge_val = int(charge_str)
+                            except ValueError:
+                                pass
+
+                        pipe_val = PipeValue(formula_str, PipeValue.FORMULA, value)
                         pipe_val.source = self._source
-                        pipe_val.is_valid_formula = is_valid_formula
+                        pipe_val.is_valid_formula = (
+                            is_valid_formula or self._validate_formula(formula_str)
+                        )
+                        pipe_val.charge = charge_str
+                        pipe_val.charge_value = charge_val
                     else:
                         pipe_val = PipeValue(parts[1], PipeValue.SYNONYM, value)
                         pipe_val.source = self._source
@@ -1444,22 +1514,32 @@ class ModificationValue:
 
     @staticmethod
     def _validate_glycan(glycan: str) -> bool:
-        """Validate a glycan string per ProForma specification."""
-        # Remove spaces for processing
+        """
+        Validate a glycan string per ProForma specification.
+
+        Supports both standard monosaccharides and custom formulas in curly braces.
+        ProForma 2.1 Section 10.2: Custom monosaccharides can be defined using {formula}
+        """
         glycan_clean = glycan.replace(" ", "")
 
-        # Build pattern to match monosaccharide with optional number
         monos = list(monosaccharides)
         monos.sort(key=len, reverse=True)
         mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
 
-        # Check if entire string matches consecutive monosaccharide patterns
         i = 0
         while i < len(glycan_clean):
-            match = re.match(mono_pattern, glycan_clean[i:])
-            if not match:
-                return False
-            i += len(match.group(0))
+            if glycan_clean[i] == "{":
+                close_brace = glycan_clean.find("}", i)
+                if close_brace == -1:
+                    return False
+                i = close_brace + 1
+                while i < len(glycan_clean) and glycan_clean[i].isdigit():
+                    i += 1
+            else:
+                match = re.match(mono_pattern, glycan_clean[i:])
+                if not match:
+                    return False
+                i += len(match.group(0))
 
         return i == len(glycan_clean)
 

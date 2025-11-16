@@ -21,6 +21,44 @@ class ProFormaParser:
     CHARGE_PATTERN = re.compile(r"/(-?\d+)(?:\[(.*?)\])?(?=-|\Z)")
 
     @staticmethod
+    def _find_balanced_paren(s: str, start: int) -> int:
+        """
+        Find the closing parenthesis matching the opening one at start.
+
+        Handles nested parentheses correctly for ProForma 2.1 named entities.
+
+        Parameters
+        ----------
+        s : str
+            The string to search
+        start : int
+            The position of the opening parenthesis
+
+        Returns
+        -------
+        int
+            Position of the matching closing parenthesis, or -1 if not found
+
+        Examples
+        --------
+        "(>Simple name)" → finds position 13
+        "(>Name (with parens))" → finds position 19
+        """
+        if start >= len(s) or s[start] != "(":
+            return -1
+
+        count = 1
+        i = start + 1
+        while i < len(s) and count > 0:
+            if s[i] == "(":
+                count += 1
+            elif s[i] == ")":
+                count -= 1
+            i += 1
+
+        return i - 1 if count == 0 else -1
+
+    @staticmethod
     def parse(
         proforma_str: str,
     ) -> Tuple[
@@ -29,6 +67,7 @@ class ProFormaParser:
         List[GlobalModification],
         List["SequenceAmbiguity"],
         Optional[Tuple[int, str]],
+        Dict[str, Optional[str]],
     ]:
         """
         Parse a ProForma string into a base sequence and modifications.
@@ -48,8 +87,39 @@ class ProFormaParser:
         global_mods = []
         sequence_ambiguities = []
 
+        names = {
+            "peptidoform_name": None,
+            "peptidoform_ion_name": None,
+            "compound_ion_name": None,
+        }
+
+        if proforma_str.startswith("(>>>"):
+            close_idx = ProFormaParser._find_balanced_paren(proforma_str, 0)
+            if close_idx != -1:
+                names["compound_ion_name"] = proforma_str[4:close_idx]
+                proforma_str = proforma_str[close_idx + 1 :]
+
+        if proforma_str.startswith("(>>"):
+            close_idx = ProFormaParser._find_balanced_paren(proforma_str, 0)
+            if close_idx != -1:
+                names["peptidoform_ion_name"] = proforma_str[3:close_idx]
+                proforma_str = proforma_str[close_idx + 1 :]
+
+        if proforma_str.startswith("(>"):
+            close_idx = ProFormaParser._find_balanced_paren(proforma_str, 0)
+            if close_idx != -1:
+                names["peptidoform_name"] = proforma_str[2:close_idx]
+                proforma_str = proforma_str[close_idx + 1 :]
+
         while proforma_str.startswith("<"):
-            end_bracket = proforma_str.find(">")
+            if proforma_str.startswith("<["):
+                closing_bracket = proforma_str.find("]", 2)
+                if closing_bracket == -1:
+                    raise ValueError("Unclosed square bracket in global modification")
+                end_bracket = proforma_str.find(">", closing_bracket)
+            else:
+                end_bracket = proforma_str.find(">")
+
             if end_bracket == -1:
                 raise ValueError("Unclosed global modification angle bracket")
 
@@ -64,10 +134,33 @@ class ProFormaParser:
                 else:
                     mod_value = mod_part
 
-                target_residues = targets.split(",")
-                global_mods.append(
-                    GlobalModification(mod_value, target_residues, "fixed")
-                )
+                target_list = []
+                has_terminal_targets = False
+                for target in targets.split(","):
+                    target = target.strip()
+
+                    if ":" in target:
+                        has_terminal_targets = True
+                        term_part, aa_part = target.split(":", 1)
+                        target_list.append(
+                            {
+                                "type": "terminal_specific",
+                                "terminal": term_part,
+                                "amino_acid": aa_part,
+                            }
+                        )
+                    elif target in ["N-term", "C-term"]:
+                        has_terminal_targets = True
+                        target_list.append({"type": "terminal", "terminal": target})
+                    else:
+                        if has_terminal_targets:
+                            target_list.append(
+                                {"type": "amino_acid", "residue": target}
+                            )
+                        else:
+                            target_list.append(target)
+
+                global_mods.append(GlobalModification(mod_value, target_list, "fixed"))
             else:
                 # Isotope labeling
                 global_mods.append(GlobalModification(global_mod_str, None, "isotope"))
@@ -386,6 +479,7 @@ class ProFormaParser:
             global_mods,
             sequence_ambiguities,
             (charge, species),
+            names,
         )
 
     @staticmethod
@@ -469,6 +563,126 @@ class ProFormaParser:
         return result_str, charge_value, ionic_species
 
     @staticmethod
+    def _parse_placement_controls(mod_str: str) -> Tuple[str, Dict]:
+        """
+        Parse placement control tags from a modification string.
+
+        ProForma 2.1 Section 11.2: Placement controls for modifications of unknown position.
+
+        Supported tags:
+        - Position:<positions> - List of allowed positions
+        - Limit:<number> - Max occurrences per position
+        - CoMKP or ColocaliseModificationsOfKnownPosition - Can colocalize with known mods
+        - CoMUP or ColocaliseModificationsOfUnknownPosition - Can colocalize with unknown mods
+
+        Parameters
+        ----------
+        mod_str : str
+            Modification string that may contain placement controls
+
+        Returns
+        -------
+        Tuple[str, Dict]
+            (cleaned_mod_str, controls_dict) where cleaned_mod_str has controls removed
+            and controls_dict contains:
+            - position_constraint: List[str] or None
+            - limit_per_position: int (default 1)
+            - colocalize_known: bool
+            - colocalize_unknown: bool
+
+        Examples
+        --------
+        "[Oxidation|Position:M]" → ("Oxidation", {position_constraint: ["M"], ...})
+        "[Oxidation|Limit:2]" → ("Oxidation", {limit_per_position: 2, ...})
+        "[Oxidation|CoMKP]" → ("Oxidation", {colocalize_known: True, ...})
+        """
+        controls = {
+            "position_constraint": None,
+            "limit_per_position": 1,
+            "colocalize_known": False,
+            "colocalize_unknown": False,
+        }
+
+        if "|" not in mod_str:
+            return mod_str, controls
+
+        parts = mod_str.split("|")
+        mod_parts = []
+
+        for i, part in enumerate(parts):
+            part = part.strip()
+
+            if part.startswith("Position:"):
+                positions_str = part[9:]
+                controls["position_constraint"] = [
+                    p.strip() for p in positions_str.split(",")
+                ]
+            elif part.startswith("Limit:"):
+                try:
+                    controls["limit_per_position"] = int(part[6:])
+                except ValueError:
+                    mod_parts.append(part)
+            elif part in ("CoMKP", "ColocaliseModificationsOfKnownPosition"):
+                controls["colocalize_known"] = True
+            elif part in ("CoMUP", "ColocaliseModificationsOfUnknownPosition"):
+                controls["colocalize_unknown"] = True
+            else:
+                mod_parts.append(part)
+
+        cleaned_mod_str = "|".join(mod_parts) if mod_parts else parts[0]
+        return cleaned_mod_str, controls
+
+    @staticmethod
+    def _is_ion_type_modification(mod_str: str) -> bool:
+        """
+        Check if a modification represents an ion type.
+
+        ProForma 2.1 Section 11.6: MSn precursor ions are indicated using
+        ion type modifications like 'a-type-ion', 'b-type-ion', etc.
+
+        Parameters
+        ----------
+        mod_str : str
+            Modification string to check
+
+        Returns
+        -------
+        bool
+            True if modification is an ion type
+
+        Examples
+        --------
+        "a-type-ion" → True
+        "b-type-ion" → True
+        "UNIMOD:140" → True (a-type-ion)
+        "UNIMOD:2132" → True (b-type-ion)
+        "Oxidation" → False
+        """
+        mod_str_lower = mod_str.lower()
+
+        # Check for -type-ion suffix
+        if mod_str_lower.endswith("-type-ion"):
+            return True
+
+        # Check for known Unimod ion type IDs
+        # UNIMOD:140 = a-type-ion, UNIMOD:2132 = b-type-ion, etc.
+        ion_type_unimod_ids = {
+            "140",  # a-type-ion
+            "2132",  # b-type-ion
+            "4",  # c-type-ion
+            "24",  # x-type-ion
+            "2133",  # y-type-ion
+            "23",  # z-type-ion
+        }
+
+        if mod_str.startswith(("UNIMOD:", "U:")):
+            unimod_id = mod_str.split(":")[1]
+            if unimod_id in ion_type_unimod_ids:
+                return True
+
+        return False
+
+    @staticmethod
     def _create_modification(
         mod_str: str,
         is_terminal: bool = False,
@@ -512,7 +726,10 @@ class ProFormaParser:
         Modification
             Created modification object
         """
-        mod_value = ModificationValue(mod_str)
+        cleaned_mod_str, placement_controls = ProFormaParser._parse_placement_controls(
+            mod_str
+        )
+        mod_value = ModificationValue(cleaned_mod_str)
         mod_type = "static"
         if is_terminal:
             mod_type = "terminal"
@@ -529,51 +746,64 @@ class ProFormaParser:
         elif is_gap:
             mod_type = "gap"
 
-        ambiguity_match = re.match(r"(.+?)#([A-Za-z0-9]+)(?:\(([0-9.]+)\))?$", mod_str)
-        ambiguity_ref_match = re.match(r"#([A-Za-z0-9]+)(?:\(([0-9.]+)\))?$", mod_str)
+        ambiguity_match = re.match(
+            r"(.+?)#([A-Za-z0-9]+)(?:\(([0-9.]+)\))?$", cleaned_mod_str
+        )
+        ambiguity_ref_match = re.match(
+            r"#([A-Za-z0-9]+)(?:\(([0-9.]+)\))?$", cleaned_mod_str
+        )
         ambiguity_group = None
         localization_score = None
         is_ambiguity_ref = False
 
-        if ProFormaParser.MASS_SHIFT_PATTERN.match(mod_str) and "#" not in mod_str:
-            mass_value = float(mod_str)
+        if (
+            ProFormaParser.MASS_SHIFT_PATTERN.match(cleaned_mod_str)
+            and "#" not in cleaned_mod_str
+        ):
+            mass_value = float(cleaned_mod_str)
             if is_gap:
                 return Modification(
-                    mod_str, mass=mass_value, mod_type="gap", mod_value=mod_value
+                    cleaned_mod_str,
+                    mass=mass_value,
+                    mod_type="gap",
+                    mod_value=mod_value,
+                    **placement_controls,
                 )
             elif in_range:
                 return Modification(
-                    mod_str,
+                    cleaned_mod_str,
                     mass=mass_value,
                     mod_type="variable",
                     in_range=True,
                     range_start=range_start,
                     range_end=range_end,
                     mod_value=mod_value,
+                    **placement_controls,
                 )
             return Modification(
-                f"Mass:{mod_str}",
+                f"Mass:{cleaned_mod_str}",
                 mass=mass_value,
                 in_range=in_range,
                 range_start=range_start,
                 range_end=range_end,
                 mod_value=mod_value,
+                **placement_controls,
             )
 
         if (
-            "#" in mod_str
+            "#" in cleaned_mod_str
             and not is_crosslink_ref
             and not is_branch
             and not is_branch_ref
             and not crosslink_id
         ):
             if ambiguity_match and not ambiguity_match.group(2).startswith("XL"):
-                mod_str = ambiguity_match.group(1)
+                cleaned_mod_str = ambiguity_match.group(1)
                 ambiguity_group = ambiguity_match.group(2)
                 if ambiguity_match.group(3):  # Score is present
                     localization_score = float(ambiguity_match.group(3))
                 mod = Modification(
-                    mod_str,
+                    cleaned_mod_str,
                     mod_type="ambiguous",
                     ambiguity_group=ambiguity_group,
                     is_ambiguity_ref=False,
@@ -582,6 +812,7 @@ class ProFormaParser:
                     range_end=range_end,
                     localization_score=localization_score,
                     mod_value=mod_value,
+                    **placement_controls,
                 )
                 return mod
             elif ambiguity_ref_match and not ambiguity_ref_match.group(1).startswith(
@@ -600,12 +831,16 @@ class ProFormaParser:
                     range_end=range_end,
                     localization_score=localization_score,
                     mod_value=mod_value,
+                    **placement_controls,
                 )
                 return mod
 
+        # Check if this is an ion type modification (ProForma 2.1 Section 11.6)
+        is_ion = ProFormaParser._is_ion_type_modification(cleaned_mod_str)
+
         # Create the modification with appropriate attributes
         return Modification(
-            mod_str,
+            cleaned_mod_str,
             mod_type=mod_type,
             crosslink_id=crosslink_id,
             is_crosslink_ref=is_crosslink_ref,
@@ -615,6 +850,8 @@ class ProFormaParser:
             range_start=range_start,
             range_end=range_end,
             mod_value=mod_value,
+            is_ion_type=is_ion,
+            **placement_controls,
         )
 
 

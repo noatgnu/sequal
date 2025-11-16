@@ -1322,6 +1322,736 @@ class TestProForma(unittest.TestCase):
         assert seq.chains[1].to_stripped_string() == "QWR"
         assert seq.chains[1].peptidoforms[1].to_stripped_string() == "AAC"
 
+    def test_named_peptidoform(self):
+        """Test peptidoform name notation (ProForma 2.1 Section 8.2)."""
+        proforma = "(>Heavy chain)EVQLVESG"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "EVQLVESG"
+        assert seq.peptidoform_name == "Heavy chain"
+        assert seq.to_proforma() == proforma
+
+    def test_named_peptidoform_ion(self):
+        """Test peptidoform ion name notation (ProForma 2.1 Section 8.2)."""
+        proforma = "(>>My ion)PEPTIDE/2"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.peptidoform_ion_name == "My ion"
+        assert seq.charge == 2
+        assert seq.to_proforma() == proforma
+
+    def test_named_compound_ion_chimeric(self):
+        """Test compound peptidoform ion name with chimeric spectra (ProForma 2.1 Section 8.2)."""
+        proforma = (
+            "(>>>Chimeric spectrum 1)(>Trypsin)AANSIPYQVSLNS+(>Keratin)AKEQFERQTA"
+        )
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.compound_ion_name == "Chimeric spectrum 1"
+        assert seq.peptidoform_name == "Trypsin"
+        assert seq.to_stripped_string() == "AANSIPYQVSLNS"
+        assert seq.peptidoforms[1].peptidoform_name == "Keratin"
+        assert seq.peptidoforms[1].to_stripped_string() == "AKEQFERQTA"
+
+    def test_complex_name_with_balanced_parentheses(self):
+        """Test name with balanced parentheses inside (ProForma 2.1 Section 8.2)."""
+        proforma = "(>P07225 (SV=1) RANGE=12..42)GGKIEVQLK"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.peptidoform_name == "P07225 (SV=1) RANGE=12..42"
+        assert seq.to_stripped_string() == "GGKIEVQLK"
+        assert seq.to_proforma() == proforma
+
+    def test_fasta_header_as_name(self):
+        """Test using full FASTA header as name (ProForma 2.1 Section 8.2)."""
+        proforma = "(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 SV=1)KVESELIK"
+        seq = Sequence.from_proforma(proforma)
+
+        assert (
+            seq.peptidoform_name
+            == "P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 SV=1"
+        )
+        assert seq.to_proforma() == proforma
+
+    def test_all_three_name_levels(self):
+        """Test all three name levels together (ProForma 2.1 Section 8.2)."""
+        proforma = "(>>>Compound)(>>Ion)(>Peptidoform)PEPTIDE/2"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.compound_ion_name == "Compound"
+        assert seq.peptidoform_ion_name == "Ion"
+        assert seq.peptidoform_name == "Peptidoform"
+        assert seq.charge == 2
+        assert seq.to_proforma() == proforma
+
+    def test_name_with_modifications(self):
+        """Test named peptidoform with modifications (ProForma 2.1 Section 8.2)."""
+        proforma = "(>Modified peptide)[Acetyl]-PEP[Phospho]TIDE-[Amidated]/2"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.peptidoform_name == "Modified peptide"
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert len(seq.mods[-1]) == 1
+        assert len(seq.mods[-2]) == 1
+        assert len(seq.seq[2].mods) == 1
+        assert seq.charge == 2
+        assert seq.to_proforma() == proforma
+
+    def test_name_without_spaces(self):
+        """Test name without spaces (ProForma 2.1 Section 8.2)."""
+        proforma = "(>MyProtein)SEQUENCE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.peptidoform_name == "MyProtein"
+        assert seq.to_proforma() == proforma
+
+    def test_name_preservation_in_roundtrip(self):
+        """Test that names are preserved in parse-serialize roundtrip (ProForma 2.1 Section 8.2)."""
+        test_proformas = [
+            "(>Test)PEPTIDE",
+            "(>>Test ion)PEPTIDE/2",
+            "(>>>Compound test)PEPTIDE",
+            "(>>>C)(>>I)(>P)PEPTIDE/3",
+            "(>Name (with) (parens))SEQUENCE",
+        ]
+
+        for proforma in test_proformas:
+            seq = Sequence.from_proforma(proforma)
+            roundtrip = seq.to_proforma()
+            assert (
+                roundtrip == proforma
+            ), f"Roundtrip failed for {proforma}: got {roundtrip}"
+
+    def test_charged_formula(self):
+        """Test charged formula notation (ProForma 2.1 Section 11.1)."""
+        proforma = "SEQUEN[Formula:Zn1:z+2]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Formula"
+        assert mod.mod_value.pipe_values[0].value == "Zn1"
+        assert mod.mod_value.pipe_values[0].charge == "+2"
+        assert mod.mod_value.pipe_values[0].charge_value == 2
+        assert seq.to_proforma() == proforma
+
+    def test_charged_formula_negative(self):
+        """Test negatively charged formula notation (ProForma 2.1 Section 11.1)."""
+        proforma = "SEQUEN[Formula:C2H3O2:z-1]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Formula"
+        assert mod.mod_value.pipe_values[0].charge == "-1"
+        assert mod.mod_value.pipe_values[0].charge_value == -1
+        assert seq.to_proforma() == proforma
+
+    def test_charged_formula_with_complex_formula(self):
+        """Test charged formula with complex chemical composition (ProForma 2.1 Section 11.1)."""
+        proforma = "PEP[Formula:C10H15N3O6S1:z+1]TIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        mod = seq.seq[2].mods[0]
+        assert mod.mod_value.pipe_values[0].value == "C10H15N3O6S1"
+        assert mod.mod_value.pipe_values[0].charge_value == 1
+        assert seq.to_proforma() == proforma
+
+    def test_charged_formula_roundtrip(self):
+        """Test that charged formulas preserve charge in roundtrip (ProForma 2.1 Section 11.1)."""
+        test_proformas = [
+            "SEQUEN[Formula:Zn1:z+2]CE",
+            "PEPTIDE[Formula:Ca1:z+2]",
+            "[Formula:Mg1:z+2]-SEQUENCE",
+            "PEPTI[Formula:Fe2:z+3]DE",
+        ]
+
+        for proforma in test_proformas:
+            seq = Sequence.from_proforma(proforma)
+            roundtrip = seq.to_proforma()
+            assert (
+                roundtrip == proforma
+            ), f"Roundtrip failed for {proforma}: got {roundtrip}"
+
+    def test_uncharged_formula_still_works(self):
+        """Test that uncharged formulas still work (backward compatibility)."""
+        proforma = "SEQUEN[Formula:C2H3O]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Formula"
+        assert mod.mod_value.pipe_values[0].value == "C2H3O"
+        assert mod.mod_value.pipe_values[0].charge is None
+        assert mod.mod_value.pipe_values[0].charge_value == 0
+        assert seq.to_proforma() == proforma
+
+    def test_custom_monosaccharide(self):
+        """Test custom monosaccharide in glycan composition (ProForma 2.1 Section 10.2)."""
+        proforma = "SEQUEN[Glycan:{C8H13N1O5}1Hex2]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Glycan"
+        assert "{C8H13N1O5}1Hex2" in mod.mod_value.pipe_values[0].value
+        assert seq.to_proforma() == proforma
+
+    def test_custom_monosaccharide_only(self):
+        """Test glycan composition with only custom monosaccharides (ProForma 2.1 Section 10.2)."""
+        proforma = "SEQUEN[Glycan:{C8H13N1O5}2]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Glycan"
+        assert seq.to_proforma() == proforma
+
+    def test_charged_custom_monosaccharide(self):
+        """Test charged custom monosaccharide (ProForma 2.1 Section 10.2 + 11.1)."""
+        proforma = "SEQUEN[Glycan:{C8H13N1O5Na1:z+1}1Hex2]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Glycan"
+        assert "{C8H13N1O5Na1:z+1}1Hex2" in mod.mod_value.pipe_values[0].value
+        assert seq.to_proforma() == proforma
+
+    def test_multiple_custom_monosaccharides(self):
+        """Test multiple custom monosaccharides in composition (ProForma 2.1 Section 10.2)."""
+        proforma = "SEQUEN[Glycan:{C8H13N1O5}1{C6H10O5}2Hex3]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_custom_monosaccharide_roundtrip(self):
+        """Test that custom monosaccharides preserve in roundtrip (ProForma 2.1 Section 10.2)."""
+        test_proformas = [
+            "SEQUEN[Glycan:{C8H13N1O5}1Hex2]CE",
+            "PEPTIDE[Glycan:{C8H13N1O5}2]",
+            "SEQ[Glycan:{C8H13N1O5Na1:z+1}1Hex2]UENCE",
+            "PEP[Glycan:HexNAc1{C8H13N1O5}1Hex2]TIDE",
+        ]
+
+        for proforma in test_proformas:
+            seq = Sequence.from_proforma(proforma)
+            roundtrip = seq.to_proforma()
+            assert (
+                roundtrip == proforma
+            ), f"Roundtrip failed for {proforma}: got {roundtrip}"
+
+    def test_standard_glycan_still_works(self):
+        """Test that standard glycan compositions still work (backward compatibility)."""
+        proforma = "SEQUEN[Glycan:Hex2HexNAc]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        mod = seq.seq[5].mods[0]
+        assert mod.mod_value.pipe_values[0].source == "Glycan"
+        assert "Hex2HexNAc" in mod.mod_value.pipe_values[0].value
+        assert seq.to_proforma() == proforma
+
+    def test_global_terminal_modification(self):
+        """Test global modification on terminals (ProForma 2.1 Section 11.3.2)."""
+        proforma = "<[TMT6plex]@K,N-term>ATPEILTCNSIGCLK"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "ATPEILTCNSIGCLK"
+        assert len(seq.global_mods) == 1
+        assert seq.global_mods[0].value == "TMT6plex"
+        assert len(seq.global_mods[0].target_residues) == 2
+        assert seq.to_proforma() == proforma
+
+    def test_global_terminal_specific_aa(self):
+        """Test global modification on terminal with specific amino acid (ProForma 2.1 Section 11.3.2)."""
+        proforma = "<[Oxidation]@W,C-term:G>QATPEILTWCNSIGCLKG"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "QATPEILTWCNSIGCLKG"
+        assert len(seq.global_mods) == 1
+        assert seq.global_mods[0].value == "Oxidation"
+        assert seq.to_proforma() == proforma
+
+    def test_multiple_terminal_global_mods(self):
+        """Test multiple global modifications with terminals (ProForma 2.1 Section 11.3.2)."""
+        proforma = (
+            "<[Gln->pyro-Glu]@N-term:Q><[Oxidation]@W,C-term:G>QATPEILTWCNSIGCLKG"
+        )
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "QATPEILTWCNSIGCLKG"
+        assert len(seq.global_mods) == 2
+        assert seq.global_mods[0].value == "Gln->pyro-Glu"
+        assert seq.global_mods[1].value == "Oxidation"
+        assert seq.to_proforma() == proforma
+
+    def test_n_term_only_global_mod(self):
+        """Test global modification on N-terminus only (ProForma 2.1 Section 11.3.2)."""
+        proforma = "<[Acetyl]@N-term>PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert len(seq.global_mods) == 1
+        targets = seq.global_mods[0].target_residues
+        assert len(targets) == 1
+        assert targets[0]["type"] == "terminal"
+        assert targets[0]["terminal"] == "N-term"
+        assert seq.to_proforma() == proforma
+
+    def test_c_term_only_global_mod(self):
+        """Test global modification on C-terminus only (ProForma 2.1 Section 11.3.2)."""
+        proforma = "<[Amidated]@C-term>QATPEILTWCNSIGCLKG"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "QATPEILTWCNSIGCLKG"
+        assert len(seq.global_mods) == 1
+        targets = seq.global_mods[0].target_residues
+        assert len(targets) == 1
+        assert targets[0]["type"] == "terminal"
+        assert targets[0]["terminal"] == "C-term"
+        assert seq.to_proforma() == proforma
+
+    def test_terminal_global_mod_roundtrip(self):
+        """Test that terminal global modifications preserve in roundtrip (ProForma 2.1 Section 11.3.2)."""
+        test_proformas = [
+            "<[TMT6plex]@K,N-term>ATPEILTCNSIGCLK",
+            "<[Oxidation]@W,C-term:G>QATPEILTWCNSIGCLKG",
+            "<[Gln->pyro-Glu]@N-term:Q><[Oxidation]@W,C-term:G>QATPEILTWCNSIGCLKG",
+            "<[Acetyl]@N-term>PEPTIDE",
+            "<[Amidated]@C-term>PEPTIDE",
+        ]
+
+        for proforma in test_proformas:
+            seq = Sequence.from_proforma(proforma)
+            roundtrip = seq.to_proforma()
+            assert (
+                roundtrip == proforma
+            ), f"Roundtrip failed for {proforma}: got {roundtrip}"
+
+    def test_standard_global_mod_still_works(self):
+        """Test that standard global modifications still work (backward compatibility)."""
+        proforma = "<[Oxidation]@C,M>MTPEILTCNSIGCLK"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "MTPEILTCNSIGCLK"
+        assert len(seq.global_mods) == 1
+        assert seq.global_mods[0].value == "Oxidation"
+        assert seq.to_proforma() == proforma
+
+    def test_position_constraint_single(self):
+        """Test Position control tag with single position."""
+        proforma = "[Oxidation|Position:M]^4?PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_position_constraint_multiple(self):
+        """Test Position control tag with multiple positions."""
+        proforma = "PEPTI(MERMERMERM)[Oxidation|Position:M][Oxidation|Position:M]DE"
+        seq = Sequence.from_proforma(proforma)
+
+        mod1 = seq.seq[5].mods[0]
+        mod2 = seq.seq[5].mods[1]
+        assert mod1.position_constraint == ["M"]
+        assert mod2.position_constraint == ["M"]
+        assert seq.to_proforma() == proforma
+
+    def test_position_constraint_terminals(self):
+        """Test Position control tag with terminal positions."""
+        proforma = (
+            "[Formula:Zn1:z+2|Position:N-term,C-term]^5?MDPETCPCPSGGSCTCADSCKCEGCKC"
+        )
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "MDPETCPCPSGGSCTCADSCKCEGCKC"
+        assert seq.to_proforma() == proforma
+
+    def test_limit_constraint(self):
+        """Test Limit control tag for multiple occurrences per position."""
+        proforma = "[Oxidation|Limit:2]^4?PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_comkp_tag(self):
+        """Test CoMKP tag for colocalization with known position modifications."""
+        proforma = "[Oxidation|CoMKP]?PEPT[Phospho]IDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_comup_tag(self):
+        """Test CoMUP tag for colocalization with unknown position modifications."""
+        proforma = "PETIE(MEME)[Dioxidation|CoMUP][Oxidation|CoMUP]P"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PETIEMEMEP"
+        mod1 = seq.seq[5].mods[0]
+        mod2 = seq.seq[5].mods[1]
+        assert mod1.colocalize_unknown is True
+        assert mod2.colocalize_unknown is True
+        assert seq.to_proforma() == proforma
+
+    def test_placement_controls_roundtrip(self):
+        """Test roundtrip for modifications with placement controls."""
+        test_cases = [
+            "[Oxidation|Position:M]^4?PEPTIDE",
+            "[Oxidation|Limit:2]^4?PEPTIDE",
+            "[Oxidation|CoMKP]?PEPT[Phospho]IDE",
+            "PETIE(MEME)[Dioxidation|CoMUP][Oxidation|CoMUP]P",
+        ]
+
+        for proforma in test_cases:
+            seq = Sequence.from_proforma(proforma)
+            assert seq.to_proforma() == proforma
+
+    def test_backward_compatibility_no_placement_controls(self):
+        """Test that modifications without placement controls still work."""
+        proforma = "[Oxidation]^4?PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_a_type_ion_notation(self):
+        """Test a-type ion notation for MSn precursors."""
+        proforma = "PEPTID-[a-type-ion]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTID"
+        assert seq.to_proforma() == proforma
+
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) == 1
+        assert c_term_mods[0].value == "a-type-ion"
+        assert c_term_mods[0].is_ion_type is True
+
+    def test_b_type_ion_notation(self):
+        """Test b-type ion notation for MSn precursors."""
+        proforma = "PEPTID-[b-type-ion]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTID"
+        assert seq.to_proforma() == proforma
+
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) == 1
+        assert c_term_mods[0].value == "b-type-ion"
+        assert c_term_mods[0].is_ion_type is True
+
+    def test_ion_notation_unimod(self):
+        """Test ion notation with Unimod references."""
+        proforma = "PEPTID-[UNIMOD:140]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTID"
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) == 1
+        assert c_term_mods[0].is_ion_type is True
+
+    def test_complex_ion_notation(self):
+        """Test complex ion type with formula modification."""
+        proforma = "PEPTID[Formula:H-1C-1O-2|Info:d-ion]-[a-type-ion]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTID"
+        assert seq.to_proforma() == proforma
+
+    def test_msn_precursor_notation(self):
+        """Test MSn precursor notation from specification."""
+        ms3_precursor = "SFFLYSKLTV-[b-type-ion]"
+        seq = Sequence.from_proforma(ms3_precursor)
+
+        assert seq.to_stripped_string() == "SFFLYSKLTV"
+        assert seq.to_proforma() == ms3_precursor
+
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) == 1
+        assert c_term_mods[0].is_ion_type is True
+
+    def test_ion_notation_roundtrip(self):
+        """Test roundtrip for various ion notations."""
+        test_cases = [
+            "PEPTID-[a-type-ion]",
+            "PEPTID-[b-type-ion]",
+            "PEPTID-[c-type-ion]",
+            "PEPTID-[x-type-ion]",
+            "PEPTID-[y-type-ion]",
+            "PEPTID-[z-type-ion]",
+            "PEPTID[Formula:H-1C-1O-2|Info:d-ion]-[a-type-ion]",
+        ]
+
+        for proforma in test_cases:
+            seq = Sequence.from_proforma(proforma)
+            assert seq.to_proforma() == proforma
+
+    def test_non_ion_type_terminal_mod(self):
+        """Test that regular terminal modifications are not flagged as ion types."""
+        proforma = "PEPTIDE-[Amidated]"
+        seq = Sequence.from_proforma(proforma)
+
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) == 1
+        assert c_term_mods[0].is_ion_type is False
+
+    def test_complex_integration_named_with_charged_formula(self):
+        """Test named peptidoform with charged formula and placement controls."""
+        proforma = "(>MyPeptide)[Formula:Zn1:z+2|Position:N-term,C-term]^5?PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.peptidoform_name == "MyPeptide"
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_all_name_levels_with_mods(self):
+        """Test all three name levels with multiple modification types."""
+        proforma = "(>>>Chimeric Spectrum 1)(>>Precursor Ion)(>Trypsin)SEQUEN[Glycan:{C8H13N1O5}1Hex2]CE[Oxidation]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.compound_ion_name == "Chimeric Spectrum 1"
+        assert seq.peptidoform_ion_name == "Precursor Ion"
+        assert seq.peptidoform_name == "Trypsin"
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_terminal_global_with_custom_glycan(self):
+        """Test terminal global modifications combined with custom monosaccharides."""
+        proforma = "<[TMT6plex]@K,N-term><[Oxidation]@C,M>MTPEILTCN[Glycan:{C8H13N1O5Na1:z+1}1Hex2]SIGCLK"
+        seq = Sequence.from_proforma(proforma)
+
+        assert len(seq.global_mods) == 2
+        assert seq.to_stripped_string() == "MTPEILTCNSIGCLK"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_placement_controls_with_ambiguity(self):
+        """Test placement controls combined with ambiguity groups."""
+        proforma = "PEPT[Oxidation|Position:M|Limit:2#1]IDE[Phospho#1]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        roundtrip = seq.to_proforma()
+        assert "Oxidation" in roundtrip
+        assert "Limit:2" in roundtrip
+        assert "Position:M" in roundtrip
+        assert "Phospho#1" in roundtrip
+
+    def test_complex_integration_ion_notation_with_charge(self):
+        """Test ion notation combined with sequence charge."""
+        proforma = "SFFLYSKLTV-[b-type-ion]/2"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SFFLYSKLTV"
+        assert seq.charge == 2
+        c_term_mods = seq.mods[-2]
+        assert c_term_mods[0].is_ion_type is True
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_chimeric_with_all_features(self):
+        """Test chimeric spectrum with named entities, global mods, and custom glycans."""
+        proforma = "(>>>MS1 Chimeric)(>Peptide1)<[Acetyl]@N-term>SEQUEN[Glycan:{C8H13N1O5}1Hex2]CE/2+(>Peptide2)<[Acetyl]@N-term>PEPTIDE-[Amidated]/3"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.compound_ion_name == "MS1 Chimeric"
+        assert seq.peptidoform_name == "Peptide1"
+        assert len(seq.global_mods) == 1
+        assert len(seq.peptidoforms) == 2
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_unknown_position_with_placement_controls(self):
+        """Test unknown position modifications with all placement control types."""
+        proforma = "[Oxidation|Position:M,C|Limit:2|CoMKP]^4?PEPT[Phospho]IDEMETCM"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDEMETCM"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_labile_with_charged_formula(self):
+        """Test labile modifications combined with charged formulas."""
+        proforma = "{Glycan:Hex2HexNAc2}SEQUEN[Formula:Zn1:z+2]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_crosslink_with_terminal_global(self):
+        """Test crosslinks combined with terminal global modifications."""
+        proforma = "<[Carbamidomethyl]@C>PEPTIDEK[UNIMOD:1896#XL1]AARQELEK[#XL1]AAR"
+        seq = Sequence.from_proforma(proforma)
+
+        assert len(seq.global_mods) == 1
+        assert seq.to_stripped_string() == "PEPTIDEKAARQELEKAAR"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_range_with_placement_controls(self):
+        """Test range modifications combined with placement controls."""
+        proforma = "PEPT(IDEME)[Oxidation|Position:M|Limit:2]TCM"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDEMETCM"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_multiple_terminal_mods_with_ion(self):
+        """Test multiple terminal modifications with ion notation."""
+        proforma = "[Acetyl]-PEPTIDE[Formula:H-1C-1O-2|Info:d-ion]-[a-type-ion]"
+        seq = Sequence.from_proforma(proforma)
+
+        n_term_mods = seq.mods[-1]
+        assert len(n_term_mods) == 1
+        assert n_term_mods[0].value == "Acetyl"
+
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) >= 1
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_info_tags_with_all_features(self):
+        """Test Info tags combined with ProForma 2.1 features."""
+        proforma = "(>NamedPep)[Acetyl|Info:N-term acetylation]-SEQUEN[Oxidation|Info:Met oxidation|Position:M]CE[Formula:Zn1:z+2|Info:Zinc binding]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.peptidoform_name == "NamedPep"
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_branch_with_charged_glycan(self):
+        """Test branched modifications with charged custom monosaccharides."""
+        proforma = "SEQUEN[Glycan:HexNAc{C8H13N1O5Na1:z+1}1#BRANCH]CE[#BRANCH]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_localization_scores_with_placement(self):
+        """Test localization scores combined with placement controls."""
+        proforma = "PEPT[Oxidation|Position:M#1(0.95)]IDE[Phospho#1(0.87)]"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_multi_chimeric_with_features(self):
+        """Test multiple chimeric peptidoforms with various features."""
+        proforma = "(>>>Complex MS2)(>Pep1)<[TMT6plex]@K,N-term>PEPTIDE/2+(>Pep2)<[TMT6plex]@K,N-term>[Oxidation|CoMUP]^2?SEQUENCE+(>Pep3)<[TMT6plex]@K,N-term>PROTEIN-[b-type-ion]/3"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.compound_ion_name == "Complex MS2"
+        assert len(seq.peptidoforms) == 3
+        assert seq.peptidoforms[0].peptidoform_name == "Pep1"
+        assert seq.peptidoforms[1].peptidoform_name == "Pep2"
+        assert seq.peptidoforms[2].peptidoform_name == "Pep3"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_gap_with_placement_controls(self):
+        """Test gap notation combined with placement controls."""
+        proforma = "PEPTX[+100|Position:X]IDX[+100|Position:X]E"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.to_stripped_string() == "PEPTXIDXE"
+        roundtrip = seq.to_proforma()
+        assert "Position:X" in roundtrip
+        assert seq.to_stripped_string() == "PEPTXIDXE"
+
+    def test_complex_integration_negative_mass_with_ion(self):
+        """Test negative mass shifts with ion notation."""
+        proforma = "PEPTIDE[-15.9949]-[a-type-ion]"
+        seq = Sequence.from_proforma(proforma)
+
+        c_term_mods = seq.mods[-2]
+        assert len(c_term_mods) >= 1
+        ion_found = any(mod.is_ion_type for mod in c_term_mods)
+        assert ion_found
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_isotope_global_with_charged_formula(self):
+        """Test isotope global modifications with charged formulas."""
+        proforma = "<13C>SEQUEN[Formula:Zn1:z+2|Position:E]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert len(seq.global_mods) == 1
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_multiple_isotopes_with_terminal_global(self):
+        """Test multiple isotope labels with terminal global modifications."""
+        proforma = "<13C><15N><[Acetyl]@N-term>PEPTIDE"
+        seq = Sequence.from_proforma(proforma)
+
+        assert len(seq.global_mods) == 3
+        assert seq.to_stripped_string() == "PEPTIDE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_all_ion_types_with_mods(self):
+        """Test all standard ion types combined with modifications."""
+        test_cases = [
+            "PEPT[Oxidation]IDE-[a-type-ion]/2",
+            "[Acetyl]-SEQUEN[Phospho]CE-[b-type-ion]/3",
+            "PROTEIN[Glycan:Hex2HexNAc]-[c-type-ion]",
+            "PEPTIDE[Formula:C2H3NO]-[x-type-ion]/1",
+            "SEQUENCE[UNIMOD:21]-[y-type-ion]/2",
+            "PROTEIN[Methylation]-[z-type-ion]/3",
+        ]
+
+        for proforma in test_cases:
+            seq = Sequence.from_proforma(proforma)
+            roundtrip = seq.to_proforma()
+            assert roundtrip == proforma, f"Roundtrip failed for {proforma}"
+
+    def test_complex_integration_mixed_modifications_same_residue(self):
+        """Test multiple different modification types on same residue."""
+        proforma = "SEQUEN[Oxidation][Glycan:Hex2]CE"
+        seq = Sequence.from_proforma(proforma)
+
+        n_mods = seq.seq[5].mods
+        assert len(n_mods) == 2
+        assert seq.to_stripped_string() == "SEQUENCE"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_terminal_specific_with_placement(self):
+        """Test terminal-specific global mods with placement controls."""
+        proforma = "<[Gln->pyro-Glu]@N-term:Q><[Oxidation]@C-term:G>[Oxidation|Position:M|Limit:2]^3?QATPEILMCNSIGCLMG"
+        seq = Sequence.from_proforma(proforma)
+
+        assert len(seq.global_mods) == 2
+        assert seq.to_stripped_string() == "QATPEILMCNSIGCLMG"
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_inter_chain_crosslink_with_features(self):
+        """Test inter-chain crosslinks with ProForma 2.1 features."""
+        proforma = "(>Chain1)<[Acetyl]@N-term>PEPTIDEK[UNIMOD:1896#XL1]AAR/2+(>Chain2)<[Acetyl]@N-term>SEQUENCEK[#XL1]DEF/3"
+        seq = Sequence.from_proforma(proforma)
+
+        assert seq.peptidoform_name == "Chain1"
+        assert len(seq.peptidoforms) == 2
+        assert seq.to_proforma() == proforma
+
+    def test_complex_integration_specification_examples_combined(self):
+        """Test combinations of examples from ProForma 2.1 specification."""
+        spec_examples = [
+            # Named + charged formula
+            "(>Tryptic peptide)SEQUEN[Formula:Zn1:z+2]CE",
+            # Terminal global + custom glycan
+            "<[TMT6plex]@K,N-term>SEQUEN[Glycan:{C8H13N1O5}1Hex2]CE",
+            # Placement controls + ion notation
+            "[Oxidation|Position:M|Limit:2]^4?PEPTIDE-[b-type-ion]",
+            # All name levels + terminal global + charge
+            "(>>>MS2 Scan 1234)(>>Precursor)(>Albumin)<[Oxidation]@C,M>MTPEILTCNSIGCLK/2",
+            # Chimeric + charged custom glycan + ion
+            "PEPTIDE/2+SEQUEN[Glycan:{C8H13N1O5Na1:z+1}1Hex2]CE-[a-type-ion]/3",
+        ]
+
+        for proforma in spec_examples:
+            seq = Sequence.from_proforma(proforma)
+            roundtrip = seq.to_proforma()
+            assert (
+                roundtrip == proforma
+            ), f"Roundtrip failed for specification example: {proforma}"
+
 
 if __name__ == "__main__":
     unittest.main()

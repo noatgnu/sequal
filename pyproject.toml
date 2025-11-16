@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sequal"
-version = "2.0.4"
+version = "2.1.0"
 description = "A Python package for working with protein sequence and PTM"
 authors = ["Toan K. Phung <toan.phungkhoiquoctoan@gmail.com>"]
 license = "MIT"
@@ -8,17 +8,14 @@ keywords = ["protein sequence", "modification", "mass spectrometry"]
 readme = "README.md"
 
 [tool.black]
-target-version = ["py39", "py310", "py311"]
-
-[tool.poetry.group.dev]
-optional = true
+target-version = ["py311"]
 
 [tool.pytest.ini-options]
 addopts = "--cov=sequal --cov-report=xml"
 
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.11"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
@@ -26,6 +23,8 @@ black = "^25.1.0"
 isort = "^5.13.2"
 pre-commit = "^4.2.0"
 pytest-cov = "^6.1.1"
+sphinx = "^8.2.3"
+sphinx-rtd-theme = "^3.0.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

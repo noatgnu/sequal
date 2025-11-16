@@ -84,6 +84,9 @@ class Sequence:
         sequence_ambiguities: List[SequenceAmbiguity] = None,
         charge=None,
         ionic_species=None,
+        peptidoform_name: Optional[str] = None,
+        peptidoform_ion_name: Optional[str] = None,
+        compound_ion_name: Optional[str] = None,
     ):
         self.encoder = encoder
         self.parser_ignore = parser_ignore or []
@@ -95,6 +98,9 @@ class Sequence:
         self.sequence_ambiguities = sequence_ambiguities or []
         self.charge = charge
         self.ionic_species = ionic_species
+        self.peptidoform_name = peptidoform_name
+        self.peptidoform_ion_name = peptidoform_ion_name
+        self.compound_ion_name = compound_ion_name
         self.is_chimeric = False
         self.peptidoforms = []
 
@@ -152,25 +158,43 @@ class Sequence:
 
             return main_seq
 
-        (
-            base_sequence,
-            modifications,
-            global_mods,
-            sequence_ambiquities,
-            charge_info,
-        ) = ProFormaParser.parse(proforma_str)
+        parse_result = ProFormaParser.parse(proforma_str)
+
+        if len(parse_result) == 5:
+            (
+                base_sequence,
+                modifications,
+                global_mods,
+                sequence_ambiquities,
+                charge_info,
+            ) = parse_result
+            names = {}
+        else:
+            (
+                base_sequence,
+                modifications,
+                global_mods,
+                sequence_ambiquities,
+                charge_info,
+                names,
+            ) = parse_result
+
         charge = None
         ionic_species = None
         if charge_info:
             charge = charge_info[0]
             if len(charge_info) > 1:
                 ionic_species = charge_info[1]
+
         seq = self(
             base_sequence,
             global_mods=global_mods,
             sequence_ambiguities=sequence_ambiquities,
             charge=charge,
             ionic_species=ionic_species,
+            peptidoform_name=names.get("peptidoform_name"),
+            peptidoform_ion_name=names.get("peptidoform_ion_name"),
+            compound_ion_name=names.get("compound_ion_name"),
         )
         for pos, mods in modifications.items():
             for mod in mods:
@@ -188,6 +212,16 @@ class Sequence:
 
     def _chain_to_proforma(self, chain):
         result = ""
+
+        if hasattr(chain, "compound_ion_name") and chain.compound_ion_name:
+            result += f"(>>>{chain.compound_ion_name})"
+
+        if hasattr(chain, "peptidoform_ion_name") and chain.peptidoform_ion_name:
+            result += f"(>>{chain.peptidoform_ion_name})"
+
+        if hasattr(chain, "peptidoform_name") and chain.peptidoform_name:
+            result += f"(>{chain.peptidoform_name})"
+
         for mod in self.global_mods:
             result += mod.to_proforma()
 

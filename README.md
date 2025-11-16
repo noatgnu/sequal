@@ -6,13 +6,19 @@ Sequal is a Python package for in-silico generation of modified sequences from a
 
 ## Features
 
-- Full support for ProForma 2.0 standard for proteoform notation
+- Full support for ProForma 2.1 standard for proteoform notation
 - Generate all possible sequences with static and variable modifications
 - Flexible modification handling with support for:
   - Formula validation for chemical modifications
+  - Charged formulas (positive and negative charges)
   - Glycan structure validation
+  - Custom monosaccharides in glycan compositions
   - Info tags and metadata
   - Observed mass recording
+- Named entities (peptidoform, peptidoform ion, and compound ion names)
+- Terminal global modifications (N-term, C-term, and terminal-specific)
+- Placement controls for unknown position modifications (Position, Limit, CoMKP, CoMUP)
+- Ion notation with semantic detection (a-type, b-type, c-type, x-type, y-type, z-type)
 - Indexing and slicing for convenient access to modification values
 - Support for custom modification annotations
 - Sequence ambiguity representation
@@ -29,9 +35,9 @@ pip install sequal
 
 ## Usage
 
-### ProForma 2.0 Support
+### ProForma 2.1 Support
 
-Sequal supports the [ProForma 2.0 standard](https://www.psidev.info/proforma) for proteoform notation, which provides a standardized way to represent protein sequences with their modifications.
+Sequal supports the [ProForma 2.1 standard](https://github.com/HUPO-PSI/ProForma) for proteoform notation, which provides a standardized way to represent protein sequences with their modifications.
 
 #### Parsing ProForma notation
 
@@ -161,6 +167,154 @@ print(f"Is valid glycan: {mod.mod_value[0].is_valid}")  # False
 print(f"Invalid glycan pipe value type: {mod.mod_value[0].type}")  # PipeValue.SYNONYM
 ```
 
+#### Named entities (ProForma 2.1)
+
+```python
+from sequal.sequence import Sequence
+
+# Peptidoform name
+seq = Sequence.from_proforma("(>Tryptic peptide)SEQUEN[Phospho]CE")
+print(seq.peptidoform_name)  # Tryptic peptide
+
+# Peptidoform ion name
+seq = Sequence.from_proforma("(>>Precursor ion z=2)SEQUENCE")
+print(seq.peptidoform_ion_name)  # Precursor ion z=2
+
+# Compound ion name (for chimeric spectra)
+seq = Sequence.from_proforma("(>>>MS2 Scan 1234)PEPTIDE/2+SEQUENCE/3")
+print(seq.compound_ion_name)  # MS2 Scan 1234
+
+# All three naming levels together
+seq = Sequence.from_proforma("(>>>MS2)(>>Precursor)(>Albumin)PEPTIDE")
+print(seq.compound_ion_name)      # MS2
+print(seq.peptidoform_ion_name)   # Precursor
+print(seq.peptidoform_name)       # Albumin
+```
+
+#### Charged formulas (ProForma 2.1)
+
+```python
+from sequal.sequence import Sequence
+
+# Positive charge
+seq = Sequence.from_proforma("SEQUEN[Formula:Zn1:z+2]CE")
+mod = seq.seq[5].mods[0]
+print(mod.mod_value[0].value)  # Zn1
+print(mod.mod_value[0].charge)  # z+2
+print(mod.mod_value[0].charge_value)  # 2
+
+# Negative charge
+seq = Sequence.from_proforma("PEPTIDE[Formula:C2H3NO:z-1]")
+mod = seq.seq[6].mods[0]
+print(mod.mod_value[0].charge)  # z-1
+print(mod.mod_value[0].charge_value)  # -1
+```
+
+#### Custom monosaccharides (ProForma 2.1)
+
+```python
+from sequal.sequence import Sequence
+
+# Custom monosaccharide in glycan composition
+seq = Sequence.from_proforma("SEQUEN[Glycan:{C8H13N1O5}1Hex2]CE")
+mod = seq.seq[5].mods[0]
+print(mod.mod_value[0].value)  # {C8H13N1O5}1Hex2
+print(mod.mod_value[0].is_valid)  # True
+
+# Charged custom monosaccharide
+seq = Sequence.from_proforma("N[Glycan:{C8H13N1O5Na1:z+1}1Hex2HexNAc2]")
+mod = seq.seq[0].mods[0]
+print(mod.mod_value[0].value)  # {C8H13N1O5Na1:z+1}1Hex2HexNAc2
+
+# Multiple custom monosaccharides
+seq = Sequence.from_proforma("N[Glycan:{C8H13N1O5}2{C6H10O5}1Hex3]")
+mod = seq.seq[0].mods[0]
+print(mod.mod_value[0].is_valid)  # True
+```
+
+#### Terminal global modifications (ProForma 2.1)
+
+```python
+from sequal.sequence import Sequence
+
+# N-terminal global modification
+seq = Sequence.from_proforma("<[Acetyl]@N-term>PEPTIDE")
+print(seq.global_mods[0].synonyms[0])  # Acetyl
+print(seq.global_mods[0].target_residues)  # ['N-term']
+
+# C-terminal global modification
+seq = Sequence.from_proforma("<[Amidated]@C-term>PEPTIDE")
+print(seq.global_mods[0].target_residues)  # ['C-term']
+
+# Terminal-specific: only N-terminal glutamine
+seq = Sequence.from_proforma("<[Gln->pyro-Glu]@N-term:Q>QATPEILMCNSIGCLMG")
+print(seq.global_mods[0].target_residues)  # {'N-term': ['Q']}
+
+# Multiple terminal global modifications
+seq = Sequence.from_proforma("<[TMT6plex]@K,N-term><[Oxidation]@M,C-term:G>MTPEILTCNSIGCLK")
+print(len(seq.global_mods))  # 2
+```
+
+#### Placement controls (ProForma 2.1)
+
+```python
+from sequal.sequence import Sequence
+
+# Position constraint: limit where modifications can occur
+seq = Sequence.from_proforma("[Oxidation|Position:M]^4?PEPTIDEMETCM")
+print(seq.to_proforma())
+
+# Limit per position: allow multiple modifications at same position
+seq = Sequence.from_proforma("[Oxidation|Limit:2]^4?PEPTIDE")
+print(seq.to_proforma())
+
+# CoMKP: allow colocalization with known position modifications
+seq = Sequence.from_proforma("[Oxidation|CoMKP]?PEPT[Phospho]IDE")
+print(seq.to_proforma())
+
+# CoMUP: allow colocalization with unknown position modifications
+seq = Sequence.from_proforma("PEPTIDE[Dioxidation|CoMUP][Oxidation|CoMUP]")
+mod1 = seq.seq[6].mods[0]
+mod2 = seq.seq[6].mods[1]
+print(mod1.colocalize_unknown)  # True
+print(mod2.colocalize_unknown)  # True
+
+# Combined placement controls
+seq = Sequence.from_proforma("[Oxidation|Position:M,C|Limit:2|CoMKP]^4?PEPTIDE")
+print(seq.to_proforma())
+```
+
+#### Ion notation (ProForma 2.1)
+
+```python
+from sequal.sequence import Sequence
+
+# b-type ion
+seq = Sequence.from_proforma("PEPTIDE-[b-type-ion]")
+c_term_mods = seq.mods[-2]
+print(c_term_mods[0].is_ion_type)  # True
+print(c_term_mods[0].value)  # b-type-ion
+
+# a-type ion
+seq = Sequence.from_proforma("PEPTIDE-[a-type-ion]")
+c_term_mods = seq.mods[-2]
+print(c_term_mods[0].is_ion_type)  # True
+
+# Unimod ion type reference
+seq = Sequence.from_proforma("PEPTIDE-[UNIMOD:2132]")  # b-type-ion
+c_term_mods = seq.mods[-2]
+print(c_term_mods[0].is_ion_type)  # True
+
+# Complex ion notation with formula
+seq = Sequence.from_proforma("PEPTID[Formula:H-1C-1O-2|Info:d-ion]-[a-type-ion]")
+print(seq.to_proforma())
+
+# Ion notation with charge
+seq = Sequence.from_proforma("SFFLYSKLTV-[b-type-ion]/2")
+print(seq.charge)  # 2
+print(seq.mods[-2][0].is_ion_type)  # True
+```
+
 #### Converting to ProForma format
 
 ```python
@@ -175,6 +329,11 @@ print(seq.to_proforma())  # ELVIS[Phospho|INFO:newly discovered]K
 proforma = "<[Carbamidomethyl]@C>[Acetyl]-PEPTCDE-[Amidated]"
 seq = Sequence.from_proforma(proforma)
 print(seq.to_proforma())  # <[Carbamidomethyl]@C>[Acetyl]-PEPTCDE-[Amidated]
+
+# ProForma 2.1 features combined
+proforma = "(>Tryptic peptide)<[TMT6plex]@K,N-term>SEQUEN[Formula:Zn1:z+2]CE-[b-type-ion]/2"
+seq = Sequence.from_proforma(proforma)
+print(seq.to_proforma())  # Perfect roundtrip preservation
 ```
 
 ### Sequence comprehension
