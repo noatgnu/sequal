@@ -27,7 +27,10 @@ propiona = Modification(
 
 
 class MassTestCase(unittest.TestCase):
+    """Test cases for mass calculation."""
+
     def test_mass_calculation(self):
+        """Test mass calculation of a sequence."""
         seq = "TECSNTT"
         static_mods = [propiona]
         variable_mods = [nsequon]
@@ -39,6 +42,7 @@ class MassTestCase(unittest.TestCase):
             print(mass)
 
     def test_fragment_mass_calculation(self):
+        """Test mass calculation of fragments."""
         seq = "TECSNTT"
         static_mods = [propiona]
         variable_mods = [nsequon]

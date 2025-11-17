@@ -81,6 +81,57 @@ class Modification(BaseBlock):
         colocalize_unknown: bool = False,
         is_ion_type: bool = False,
     ):
+        """
+        Initializes a Modification object.
+
+        Args:
+            value (str): Short name of the modification.
+            position (int, optional): Position of the modification. Should be
+                provided when assigned to a block. Defaults to None.
+            regex_pattern (str, optional): Regular expression pattern for
+                finding modification sites. Defaults to None.
+            full_name (str, optional): Full descriptive name of the
+                modification. Defaults to None.
+            mod_type (str, optional): Type of modification: "static" or
+                "variable". Defaults to "static".
+            labile (bool, optional): Whether the modification is labile.
+                Defaults to False.
+            labile_number (int, optional): Order of fragment in labile
+                fragmentation events. Defaults to 0.
+            mass (float, optional): Mass delta of the modification in Daltons.
+                Defaults to 0.0.
+            all_filled (bool, optional): Whether modification occurs at all
+                expected sites. Defaults to False.
+            crosslink_id (str, optional): The crosslink identifier. Defaults to None.
+            is_crosslink_ref (bool, optional): Whether this modification is a
+                crosslink reference. Defaults to False.
+            is_branch_ref (bool, optional): Whether this modification is a
+                branch reference. Defaults to False.
+            is_branch (bool, optional): Whether this modification is a branch.
+                Defaults to False.
+            ambiguity_group (str, optional): The ambiguity group of the
+                modification. Defaults to None.
+            is_ambiguity_ref (bool, optional): Whether this modification is an
+                ambiguity reference. Defaults to False.
+            in_range (bool, optional): Whether the modification is in a range.
+                Defaults to False.
+            range_start (int, optional): The start of the range. Defaults to None.
+            range_end (int, optional): The end of the range. Defaults to None.
+            localization_score (float, optional): The localization score.
+                Defaults to None.
+            mod_value (ModificationValue, optional): The modification value
+                object. Defaults to None.
+            position_constraint (List[str], optional): A list of position
+                constraints. Defaults to None.
+            limit_per_position (int, optional): The limit per position.
+                Defaults to 1.
+            colocalize_known (bool, optional): Whether to colocalize with
+                known modifications. Defaults to False.
+            colocalize_unknown (bool, optional): Whether to colocalize with
+                unknown modifications. Defaults to False.
+            is_ion_type (bool, optional): Whether the modification is an ion
+                type. Defaults to False.
+        """
         self._source = None
         self._original_value = value
         self._crosslink_id = crosslink_id
@@ -140,27 +191,27 @@ class Modification(BaseBlock):
 
     @property
     def value(self):
-        """Get the modification value."""
+        """str: The modification value."""
         return self._mod_value.primary_value if self._mod_value else self._value
 
     @property
     def mass(self):
-        """Get the mass of the modification."""
+        """float: The mass of the modification."""
         return self._mod_value.mass if self._mod_value else self._mass
 
     @property
     def observed_mass(self):
-        """Get the observed mass of the modification."""
+        """float: The observed mass of the modification."""
         return self._mod_value.observed_mass if self._mod_value else 0
 
     @property
     def ambiguity_group(self):
-        """Get the ambiguity group of the modification."""
+        """str: The ambiguity group of the modification."""
         return self._mod_value.ambiguity_group if self._mod_value else None
 
     @property
     def is_ambiguity_ref(self):
-        """Check if the modification is an ambiguity reference."""
+        """bool: True if the modification is an ambiguity reference."""
         return (
             self._mod_value.is_ambiguity_ref
             if self._mod_value
@@ -169,19 +220,19 @@ class Modification(BaseBlock):
 
     @property
     def synonyms(self):
-        """Get the synonyms of the modification."""
+        """List[str]: A list of synonyms for the modification."""
         return self._mod_value.synonyms
 
     @staticmethod
     def _validate_formula(formula: str) -> bool:
         """
-        Validate a chemical formula according to the specified rules.
+        Validates a chemical formula according to ProForma specification.
 
-        Validates:
-        1. Element symbols followed by optional numbers (C12, H20, O)
-        2. Isotopes in brackets ([13C2])
-        3. Spaces between elements
-        4. Negative cardinalities (C-2)
+        Args:
+            formula (str): The chemical formula to validate.
+
+        Returns:
+            bool: True if the formula is valid, False otherwise.
         """
         # Empty formula is invalid
         if not formula.strip():
@@ -242,10 +293,13 @@ class Modification(BaseBlock):
     @staticmethod
     def _validate_glycan(glycan: str) -> bool:
         """
-        Validate a glycan string per ProForma specification.
+        Validates a glycan string per ProForma specification.
 
-        Supports both standard monosaccharides and custom formulas in curly braces.
-        ProForma 2.1 Section 10.2: Custom monosaccharides can be defined using {formula}
+        Args:
+            glycan (str): The glycan string to validate.
+
+        Returns:
+            bool: True if the glycan is valid, False otherwise.
         """
         glycan_clean = glycan.replace(" ", "")
         monos = list(monosaccharides)
@@ -270,23 +324,22 @@ class Modification(BaseBlock):
 
     @property
     def mod_value(self) -> Optional["ModificationValue"]:
-        """Get the modification value object."""
+        """Optional[ModificationValue]: The modification value object."""
         return self._mod_value
 
     @property
     def info_tags(self) -> List[str]:
-        """Get the list of information tags associated with the modification."""
-
+        """List[str]: A list of information tags associated with the modification."""
         return self._mod_value.info_tags
 
     @property
     def crosslink_id(self) -> Optional[str]:
-        """Get the crosslink identifier."""
+        """Optional[str]: The crosslink identifier."""
         return self.mod_value.crosslink_id if self._mod_value else self._crosslink_id
 
     @property
     def is_crosslink_ref(self) -> bool:
-        """Check if this modification is a crosslink reference."""
+        """bool: True if this modification is a crosslink reference."""
         return (
             self._mod_value.is_crosslink_ref
             if self._mod_value
@@ -295,42 +348,42 @@ class Modification(BaseBlock):
 
     @property
     def source(self) -> Optional[str]:
-        """Get the modification database source."""
+        """Optional[str]: The modification database source."""
         return self._mod_value.source if self._mod_value else self._source
 
     @property
     def original_value(self) -> str:
-        """Get the original value including any source prefix."""
+        """str: The original value including any source prefix."""
         return self._original_value
 
     @property
     def regex(self) -> Optional[Pattern]:
-        """Get the compiled regex pattern for finding modification sites."""
+        """Optional[Pattern]: The compiled regex pattern for finding modification sites."""
         return self._regex
 
     @property
     def mod_type(self) -> str:
-        """Get the modification type (static or variable)."""
+        """str: The modification type (e.g., 'static', 'variable')."""
         return self._mod_type
 
     @property
     def labile(self) -> bool:
-        """Check if the modification is labile."""
+        """bool: True if the modification is labile."""
         return self._labile
 
     @property
     def labile_number(self) -> int:
-        """Get the labile fragmentation order number."""
+        """int: The labile fragmentation order number."""
         return self._labile_number
 
     @property
     def full_name(self) -> Optional[str]:
-        """Get the full descriptive name of the modification."""
+        """Optional[str]: The full descriptive name of the modification."""
         return self._full_name
 
     @property
     def all_filled(self) -> bool:
-        """Check if the modification occurs at all expected sites."""
+        """bool: True if the modification occurs at all expected sites."""
         return self._all_filled
 
     def find_positions(self, seq: str) -> Iterator[Tuple[int, int]]:
@@ -366,7 +419,12 @@ class Modification(BaseBlock):
                 yield match.start(), match.end()
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert the modification to a dictionary representation."""
+        """
+        Converts the modification to a dictionary representation.
+
+        Returns:
+            Dict[str, Any]: A dictionary containing the modification's attributes.
+        """
         result = super().to_dict()
         result.update(
             {
@@ -385,7 +443,15 @@ class Modification(BaseBlock):
         return result
 
     def __eq__(self, other) -> bool:
-        """Check if two modifications are equal."""
+        """
+        Checks if two modifications are equal.
+
+        Args:
+            other (Any): The object to compare with.
+
+        Returns:
+            bool: True if the modifications are equal, False otherwise.
+        """
         if not super().__eq__(other):
             return False
         if not isinstance(other, Modification):
@@ -397,12 +463,22 @@ class Modification(BaseBlock):
         )
 
     def __hash__(self) -> int:
-        """Generate a hash for the modification."""
+        """
+        Generates a hash for the modification.
+
+        Returns:
+            int: The hash of the modification.
+        """
         base_hash = super().__hash__()
         return hash((base_hash, self._mod_type, self._labile, self._labile_number))
 
     def __str__(self) -> str:
-        """Return a string representation of the modification."""
+        """
+        Returns a string representation of the modification.
+
+        Returns:
+            str: The string representation of the modification.
+        """
         if self._is_crosslink_ref and self._crosslink_id:
             return f"#{self._crosslink_id}"
         if self._is_branch_ref:
@@ -419,19 +495,39 @@ class Modification(BaseBlock):
         return result
 
     def __repr__(self) -> str:
-        """Return a detailed string representation for debugging."""
+        """
+        Returns a detailed string representation for debugging.
+
+        Returns:
+            str: The detailed string representation of the modification.
+        """
         return f"Modification(value='{self.value}', position={self.position},mod_type='{self._mod_type}', labile={self._labile}, crosslink_id={self._crosslink_id!r}, is_crosslink_ref={self._is_crosslink_ref}, is_branch={self._is_branch}, is_branch_ref={self._is_branch_ref})"
 
     def has_ambiguity(self) -> bool:
-        """Check if the modification has ambiguity."""
+        """
+        Checks if the modification has ambiguity.
+
+        Returns:
+            bool: True if the modification has ambiguity, False otherwise.
+        """
         return any([v.type == PipeValue.AMBIGUITY for v in self.mod_value._pipe_values])
 
     def has_crosslink(self) -> bool:
-        """Check if the modification has crosslink."""
+        """
+        Checks if the modification has a crosslink.
+
+        Returns:
+            bool: True if the modification has a crosslink, False otherwise.
+        """
         return any([v.type == PipeValue.CROSSLINK for v in self.mod_value._pipe_values])
 
     def has_branch(self) -> bool:
-        """Check if the modification has branch."""
+        """
+        Checks if the modification has a branch.
+
+        Returns:
+            bool: True if the modification has a branch, False otherwise.
+        """
         return any([v.type == PipeValue.BRANCH for v in self.mod_value._pipe_values])
 
     def to_proforma(self) -> str:
@@ -666,7 +762,14 @@ class ModificationMap:
 
 
 class GlobalModification(Modification):
-    """Represents a global modification that applies to specified residues."""
+    """
+    Represents a global modification that applies to specified residues.
+
+    Attributes:
+        target_residues (Optional[List[str]]): For fixed modifications, the
+            target residue types (e.g., ["C", "M"]).
+        global_mod_type (str): Type of global modification: "isotope" or "fixed".
+    """
 
     def __init__(
         self,
@@ -674,16 +777,18 @@ class GlobalModification(Modification):
         target_residues: Optional[List[str]] = None,
         mod_type: str = "isotope",
     ):
-        """Initialize a global modification.
+        """
+        Initializes a global modification.
 
-        Parameters
-        ----------
-        value : str
-            The modification value (name, accession, or formula)
-        target_residues : List[str], optional
-            For fixed modifications, the target residue types (e.g., ["C", "M"])
-        mod_type : str
-            Type of global modification: "isotope" or "fixed"
+        Args:
+            value (str): The modification value (name, accession, or formula).
+            target_residues (Optional[List[str]]): For fixed modifications, the
+                target residue types (e.g., ["C", "M"]). Defaults to None.
+            mod_type (str): Type of global modification: "isotope" or "fixed".
+                Defaults to "isotope".
+
+        Raises:
+            ValueError: If mod_type is not 'isotope' or 'fixed'.
         """
         if mod_type not in ["isotope", "fixed"]:
             raise ValueError("Global modification type must be 'isotope' or 'fixed'")
@@ -698,7 +803,12 @@ class GlobalModification(Modification):
         self.global_mod_type = mod_type
 
     def to_proforma(self) -> str:
-        """Convert to ProForma notation."""
+        """
+        Converts to ProForma notation.
+
+        Returns:
+            str: The ProForma notation string.
+        """
         if self.global_mod_type == "isotope":
             return f"<{super().to_proforma()}>"
         else:
@@ -726,7 +836,12 @@ class GlobalModification(Modification):
             return f"<{mod_str}@{targets}>"
 
     def __repr__(self) -> str:
-        """Return a detailed string representation for debugging."""
+        """
+        Returns a detailed string representation for debugging.
+
+        Returns:
+            str: The detailed string representation.
+        """
         base = f"GlobalModification(value='{self.value}'"
         if self.source:
             base += f", source='{self.source}'"
@@ -737,7 +852,9 @@ class GlobalModification(Modification):
 
 
 class PipeValue:
-    """Represents a single pipe-separated value in a modification."""
+    """
+    Represents a single pipe-separated value in a modification.
+    """
 
     SYNONYM = "synonym"
     INFO_TAG = "info_tag"
@@ -751,6 +868,15 @@ class PipeValue:
     FORMULA = "formula"
 
     def __init__(self, value: str, value_type: str, original_value: str = None):
+        """
+        Initializes a PipeValue object.
+
+        Args:
+            value (str): The value of the pipe-separated component.
+            value_type (str): The type of the pipe-separated component.
+            original_value (str, optional): The original value of the
+                component. Defaults to None.
+        """
         self.value = value
         self._type = value_type
         self.crosslink_id = None
@@ -772,7 +898,7 @@ class PipeValue:
         self.assigned_types: List[str] = []
 
     def _extract_properties(self):
-        """Extract special properties from the value based on type."""
+        """Extracts special properties from the value based on type."""
         if self.type == self.CROSSLINK and "#" in self.value:
             parts = self.value.split("#", 1)
             if parts[1] == "BRANCH":
@@ -792,10 +918,17 @@ class PipeValue:
                         pass
 
     def __str__(self) -> str:
+        """
+        Returns a string representation of the PipeValue.
+
+        Returns:
+            str: The string representation of the PipeValue.
+        """
         return self.value
 
     @property
     def type(self) -> str:
+        """str: The type of the pipe-separated component."""
         return self._type
 
     @type.setter
@@ -807,13 +940,20 @@ class PipeValue:
             self.assign_type(value)
 
     def assign_type(self, value: str):
-        """Assign a type to the PipeValue."""
+        """
+        Assigns a type to the PipeValue.
+
+        Args:
+            value (str): The type to assign.
+        """
         if value not in self.assigned_types:
             self.assigned_types.append(value)
 
 
 class ModificationValue:
-    """Represents a modification value with unified pipe value handling."""
+    """
+    Represents a modification value with unified pipe value handling.
+    """
 
     KNOWN_SOURCES = {
         "Unimod",
@@ -841,6 +981,13 @@ class ModificationValue:
     }
 
     def __init__(self, value: str, mass: Optional[float] = None):
+        """
+        Initializes a ModificationValue object.
+
+        Args:
+            value (str): The modification value string.
+            mass (Optional[float]): The mass of the modification. Defaults to None.
+        """
         self._primary_value = ""
         self._source = None
         self._mass = mass
@@ -849,7 +996,12 @@ class ModificationValue:
         self._parse_value(value)
 
     def _parse_value(self, value: str):
-        """Parse modification value with unified pipe value handling."""
+        """
+        Parses the modification value string.
+
+        Args:
+            value (str): The modification value string.
+        """
         if "|" in value:
             components = value.split("|")
             self._process_primary_value(components[0])
@@ -859,7 +1011,12 @@ class ModificationValue:
             self._process_primary_value(value)
 
     def _process_primary_value(self, value: str):
-        """Process the primary value component."""
+        """
+        Processes the primary value component of the modification value.
+
+        Args:
+            value (str): The primary value component.
+        """
         if value == "#BRANCH":
             self._primary_value = ""
             pipe_val = PipeValue(value, PipeValue.BRANCH, value)
@@ -1109,7 +1266,12 @@ class ModificationValue:
                     self._pipe_values.append(pipe_val)
 
     def _process_pipe_component(self, component: str):
-        """Process a single pipe-separated component."""
+        """
+        Processes a single pipe-separated component.
+
+        Args:
+            component (str): The pipe-separated component.
+        """
         if component == "#BRANCH":
             pipe_val = PipeValue(component, PipeValue.BRANCH, component)
             pipe_val.is_branch_ref = True
@@ -1354,22 +1516,27 @@ class ModificationValue:
 
     @property
     def source(self) -> Optional[str]:
+        """Optional[str]: The source of the modification."""
         return self._source
 
     @property
     def primary_value(self) -> str:
+        """str: The primary value of the modification."""
         return self._primary_value
 
     @property
     def mass(self) -> Optional[float]:
+        """Optional[float]: The mass of the modification."""
         return self._mass
 
     @property
     def synonyms(self) -> List[str]:
+        """List[str]: A list of synonyms for the modification."""
         return [pv.value for pv in self._pipe_values if pv.type == PipeValue.SYNONYM]
 
     @property
     def observed_mass(self) -> Optional[str]:
+        """Optional[str]: The observed mass of the modification."""
         for pv in self._pipe_values:
             if pv.type == PipeValue.OBSERVED_MASS:
                 parts = pv.value.split(":", 1)
@@ -1379,14 +1546,17 @@ class ModificationValue:
 
     @property
     def pipe_values(self) -> List[PipeValue]:
+        """List[PipeValue]: A list of PipeValue objects."""
         return self._pipe_values
 
     @property
     def info_tags(self) -> List[str]:
+        """List[str]: A list of information tags."""
         return [pv.value for pv in self._pipe_values if pv.type == PipeValue.INFO_TAG]
 
     @property
     def crosslink_id(self) -> Optional[str]:
+        """Optional[str]: The crosslink identifier."""
         for pv in self._pipe_values:
             if pv.type == PipeValue.CROSSLINK and pv.crosslink_id:
                 return pv.crosslink_id
@@ -1394,18 +1564,22 @@ class ModificationValue:
 
     @property
     def is_branch(self) -> bool:
+        """bool: True if the modification is a branch."""
         return any(pv.is_branch for pv in self._pipe_values)
 
     @property
     def is_branch_ref(self) -> bool:
+        """bool: True if the modification is a branch reference."""
         return any(pv.is_branch_ref for pv in self._pipe_values)
 
     @property
     def is_crosslink_ref(self) -> bool:
+        """bool: True if the modification is a crosslink reference."""
         return any(pv.is_crosslink_ref for pv in self._pipe_values)
 
     @property
     def ambiguity_group(self) -> Optional[str]:
+        """Optional[str]: The ambiguity group of the modification."""
         for pv in self._pipe_values:
             if pv.type == PipeValue.AMBIGUITY and pv.ambiguity_group:
                 return pv.ambiguity_group
@@ -1413,10 +1587,16 @@ class ModificationValue:
 
     @property
     def is_ambiguity_ref(self) -> bool:
+        """bool: True if the modification is an ambiguity reference."""
         return any(pv.is_ambiguity_ref for pv in self._pipe_values)
 
     def to_string(self) -> str:
-        """Convert to string representation for ProForma output."""
+        """
+        Converts to string representation for ProForma output.
+
+        Returns:
+            str: The ProForma string representation.
+        """
         parts = []
 
         # Start with primary value and source
@@ -1437,13 +1617,13 @@ class ModificationValue:
     @staticmethod
     def _validate_formula(formula: str) -> bool:
         """
-        Validate a chemical formula according to the specified rules.
+        Validates a chemical formula according to ProForma specification.
 
-        Validates:
-        1. Element symbols followed by optional numbers (C12, H20, O)
-        2. Isotopes in brackets ([13C2])
-        3. Spaces between elements
-        4. Negative cardinalities (C-2)
+        Args:
+            formula (str): The chemical formula to validate.
+
+        Returns:
+            bool: True if the formula is valid, False otherwise.
         """
         # Empty formula is invalid
         if not formula.strip():
@@ -1515,10 +1695,13 @@ class ModificationValue:
     @staticmethod
     def _validate_glycan(glycan: str) -> bool:
         """
-        Validate a glycan string per ProForma specification.
+        Validates a glycan string per ProForma specification.
 
-        Supports both standard monosaccharides and custom formulas in curly braces.
-        ProForma 2.1 Section 10.2: Custom monosaccharides can be defined using {formula}
+        Args:
+            glycan (str): The glycan string to validate.
+
+        Returns:
+            bool: True if the glycan is valid, False otherwise.
         """
         glycan_clean = glycan.replace(" ", "")
 
@@ -1545,43 +1728,34 @@ class ModificationValue:
 
     def __getitem__(self, index):
         """
-        Access pipe values by index or slice.
+        Accesses pipe values by index or slice.
 
-        Parameters
-        ----------
-        index : int or slice
-            Index or slice to access pipe values
+        Args:
+            index (int or slice): Index or slice to access pipe values.
 
-        Returns
-        -------
-        PipeValue or list
-            Single PipeValue for integer index, list of PipeValues for slice
+        Returns:
+            PipeValue or list: Single PipeValue for integer index, list of
+                PipeValues for slice.
 
-        Raises
-        ------
-        IndexError
-            If index is out of range
+        Raises:
+            IndexError: If index is out of range.
         """
         return self._pipe_values[index]
 
     def __len__(self):
         """
-        Get the number of pipe values.
+        Gets the number of pipe values.
 
-        Returns
-        -------
-        int
-            Number of pipe values
+        Returns:
+            int: The number of pipe values.
         """
         return len(self._pipe_values)
 
     def __iter__(self):
         """
-        Allow iteration through pipe values.
+        Allows iteration through pipe values.
 
-        Returns
-        -------
-        iterator
-            Iterator over pipe values
+        Returns:
+            iterator: An iterator over pipe values.
         """
         return iter(self._pipe_values)

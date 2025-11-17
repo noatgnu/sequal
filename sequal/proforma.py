@@ -23,26 +23,16 @@ class ProFormaParser:
     @staticmethod
     def _find_balanced_paren(s: str, start: int) -> int:
         """
-        Find the closing parenthesis matching the opening one at start.
+        Finds the closing parenthesis matching the opening one at start.
 
         Handles nested parentheses correctly for ProForma 2.1 named entities.
 
-        Parameters
-        ----------
-        s : str
-            The string to search
-        start : int
-            The position of the opening parenthesis
+        Args:
+            s (str): The string to search.
+            start (int): The position of the opening parenthesis.
 
-        Returns
-        -------
-        int
-            Position of the matching closing parenthesis, or -1 if not found
-
-        Examples
-        --------
-        "(>Simple name)" → finds position 13
-        "(>Name (with parens))" → finds position 19
+        Returns:
+            int: Position of the matching closing parenthesis, or -1 if not found.
         """
         if start >= len(s) or s[start] != "(":
             return -1
@@ -70,17 +60,20 @@ class ProFormaParser:
         Dict[str, Optional[str]],
     ]:
         """
-        Parse a ProForma string into a base sequence and modifications.
+        Parses a ProForma string into a base sequence and modifications.
 
-        Parameters
-        ----------
-        proforma_str : str
-            ProForma formatted peptide string
+        Args:
+            proforma_str (str): ProForma formatted peptide string.
 
-        Returns
-        -------
-        Tuple[str, Dict[int, List[Modification]]]
-            Base sequence and modifications dictionary
+        Returns:
+            Tuple[str, Dict[int, List[Modification]], List[GlobalModification], List["SequenceAmbiguity"], Optional[Tuple[int, str]], Dict[str, Optional[str]]]:
+                A tuple containing:
+                    - The base sequence.
+                    - A dictionary of modifications keyed by position.
+                    - A list of global modifications.
+                    - A list of sequence ambiguities.
+                    - A tuple of charge and ionic species.
+                    - A dictionary of names.
         """
         base_sequence = ""
         modifications = defaultdict(list)
@@ -485,17 +478,16 @@ class ProFormaParser:
     @staticmethod
     def parse_charge_info(proforma_str):
         """
-        Parse charge information from a ProForma string without using regex.
+        Parses charge information from a ProForma string.
 
-        Parameters
-        ----------
-        proforma_str : str
-            The ProForma string to parse
+        Args:
+            proforma_str (str): The ProForma string to parse.
 
-        Returns
-        -------
-        tuple
-            (updated_proforma_str, charge_value, ionic_species)
+        Returns:
+            tuple: A tuple containing:
+                - The updated ProForma string.
+                - The charge value.
+                - The ionic species.
         """
         if "/" not in proforma_str:
             return proforma_str, None, None
@@ -565,36 +557,15 @@ class ProFormaParser:
     @staticmethod
     def _parse_placement_controls(mod_str: str) -> Tuple[str, Dict]:
         """
-        Parse placement control tags from a modification string.
+        Parses placement control tags from a modification string.
 
-        ProForma 2.1 Section 11.2: Placement controls for modifications of unknown position.
+        Args:
+            mod_str (str): Modification string that may contain placement controls.
 
-        Supported tags:
-        - Position:<positions> - List of allowed positions
-        - Limit:<number> - Max occurrences per position
-        - CoMKP or ColocaliseModificationsOfKnownPosition - Can colocalize with known mods
-        - CoMUP or ColocaliseModificationsOfUnknownPosition - Can colocalize with unknown mods
-
-        Parameters
-        ----------
-        mod_str : str
-            Modification string that may contain placement controls
-
-        Returns
-        -------
-        Tuple[str, Dict]
-            (cleaned_mod_str, controls_dict) where cleaned_mod_str has controls removed
-            and controls_dict contains:
-            - position_constraint: List[str] or None
-            - limit_per_position: int (default 1)
-            - colocalize_known: bool
-            - colocalize_unknown: bool
-
-        Examples
-        --------
-        "[Oxidation|Position:M]" → ("Oxidation", {position_constraint: ["M"], ...})
-        "[Oxidation|Limit:2]" → ("Oxidation", {limit_per_position: 2, ...})
-        "[Oxidation|CoMKP]" → ("Oxidation", {colocalize_known: True, ...})
+        Returns:
+            Tuple[str, Dict]: A tuple containing:
+                - The cleaned modification string with controls removed.
+                - A dictionary of placement controls.
         """
         controls = {
             "position_constraint": None,
@@ -635,28 +606,13 @@ class ProFormaParser:
     @staticmethod
     def _is_ion_type_modification(mod_str: str) -> bool:
         """
-        Check if a modification represents an ion type.
+        Checks if a modification represents an ion type.
 
-        ProForma 2.1 Section 11.6: MSn precursor ions are indicated using
-        ion type modifications like 'a-type-ion', 'b-type-ion', etc.
+        Args:
+            mod_str (str): Modification string to check.
 
-        Parameters
-        ----------
-        mod_str : str
-            Modification string to check
-
-        Returns
-        -------
-        bool
-            True if modification is an ion type
-
-        Examples
-        --------
-        "a-type-ion" → True
-        "b-type-ion" → True
-        "UNIMOD:140" → True (a-type-ion)
-        "UNIMOD:2132" → True (b-type-ion)
-        "Oxidation" → False
+        Returns:
+            bool: True if the modification is an ion type, False otherwise.
         """
         mod_str_lower = mod_str.lower()
 
@@ -699,32 +655,35 @@ class ProFormaParser:
         range_end: Optional[int] = None,
     ) -> Modification:
         """
-        Create a Modification object from a ProForma modification string.
+        Creates a Modification object from a ProForma modification string.
 
-        Parameters
-        ----------
-        mod_str : str
-            Modification string from ProForma notation
-        is_terminal : bool
-            Whether this is a terminal modification
-        is_ambiguous : bool
-            Whether this is an ambiguous modification
-        crosslink_id : str, optional
-            The crosslink identifier, if applicable
-        is_crosslink_ref : bool
-            Whether this is a crosslink reference
-        is_branch : bool
-            Whether this is a branch modification
-        is_branch_ref : bool
-            Whether this is a branch reference
-        is_gap : bool
-            Whether this is a gap modification
+        Args:
+            mod_str (str): Modification string from ProForma notation.
+            is_terminal (bool, optional): Whether this is a terminal modification.
+                Defaults to False.
+            is_ambiguous (bool, optional): Whether this is an ambiguous
+                modification. Defaults to False.
+            is_labile (bool, optional): Whether this is a labile modification.
+                Defaults to False.
+            is_unknown_position (bool, optional): Whether this is a modification
+                of unknown position. Defaults to False.
+            crosslink_id (str, optional): The crosslink identifier, if applicable.
+                Defaults to None.
+            is_crosslink_ref (bool, optional): Whether this is a crosslink
+                reference. Defaults to False.
+            is_branch (bool, optional): Whether this is a branch modification.
+                Defaults to False.
+            is_branch_ref (bool, optional): Whether this is a branch reference.
+                Defaults to False.
+            is_gap (bool, optional): Whether this is a gap modification.
+                Defaults to False.
+            in_range (bool, optional): Whether this modification is in a range.
+                Defaults to False.
+            range_start (int, optional): The start of the range. Defaults to None.
+            range_end (int, optional): The end of the range. Defaults to None.
 
-
-        Returns
-        -------
-        Modification
-            Created modification object
+        Returns:
+            Modification: The created modification object.
         """
         cleaned_mod_str, placement_controls = ProFormaParser._parse_placement_controls(
             mod_str
@@ -856,17 +815,21 @@ class ProFormaParser:
 
 
 class SequenceAmbiguity:
-    """Represents ambiguity in the amino acid sequence."""
+    """
+    Represents ambiguity in the amino acid sequence.
+
+    Attributes:
+        value (str): The ambiguous sequence possibilities.
+        position (int): The position in the sequence where ambiguity occurs.
+    """
 
     def __init__(self, value: str, position: int):
-        """Initialize a sequence ambiguity.
+        """
+        Initializes a sequence ambiguity.
 
-        Parameters
-        ----------
-        value : str
-            The ambiguous sequence possibilities
-        position : int
-            The position in the sequence where ambiguity occurs
+        Args:
+            value (str): The ambiguous sequence possibilities.
+            position (int): The position in the sequence where ambiguity occurs.
         """
         self.value = value
         self.position = position

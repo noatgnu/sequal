@@ -32,7 +32,10 @@ propiona = Modification("Propionamide", regex_pattern="C", mod_type="static", ma
 
 
 class MassSpecTestCase(unittest.TestCase):
+    """Test cases for mass spectrometry fragmentation."""
+
     def test_fragment_non_labile(self):
+        """Test non-labile fragmentation."""
         seq = "TECSNTT"
         static_mods = [propiona]
         variable_mods = [nsequon]
@@ -46,6 +49,7 @@ class MassSpecTestCase(unittest.TestCase):
                 print(y, "y{}".format(y.fragment_number))
 
     def test_fragment_labile(self):
+        """Test labile fragmentation."""
         seq = "TECSNTT"
         static_mods = [propiona]
         variable_mods = [nsequon]

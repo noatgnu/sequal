@@ -22,26 +22,34 @@ propiona = Modification("Propionamide", regex_pattern="C", mod_type="static")
 
 
 class TestAASequence(unittest.TestCase):
+    """Test cases for the Sequence class."""
+
     def test_normal_sequence(self):
+        """Test creation of a normal sequence."""
         seq = Sequence("TESTEST")
 
     def test_mod_rightseq(self):
+        """Test a sequence with a modification on the right."""
         seq = Sequence("TEN[HexNAc]ST")
 
     def test_two_mod_rightseq(self):
+        """Test a sequence with two modifications on the right."""
         seq = Sequence("TEN[HexNAc][HexNAc]ST")
 
     def test_mod_leftseq(self):
+        """Test a sequence with a modification on the left."""
         seq = Sequence("TE[HexNAc]NST", mod_position="left")
         for i in seq.seq:
             print(i, i.mods)
 
     def test_two_mod_leftseq(self):
+        """Test a sequence with two modifications on the left."""
         seq = Sequence("TE[HexNAc][HexNAc]NST", mod_position="left")
         for i in seq.seq:
             print(i, i.mods)
 
     def test_custom_string(self):
+        """Test custom string formatting."""
         seq = Sequence("TENST")
         a = {1: "tes", 2: ["1", "200"]}
         print(
@@ -54,7 +62,10 @@ class TestAASequence(unittest.TestCase):
 
 
 class TestModdedSequence(unittest.TestCase):
+    """Test cases for the ModdedSequenceGenerator class."""
+
     def test_variable_mod_generator(self):
+        """Test the variable modification generator."""
         seq = "TESNSTT"
         mods = [nsequon, osequon, carbox]
         g = ModdedSequenceGenerator(seq, mods, [])
@@ -63,6 +74,7 @@ class TestModdedSequence(unittest.TestCase):
             print(i)
 
     def test_static_mod_generator(self):
+        """Test the static modification generator."""
         seq = "TECSNTT"
         mods = [propiona]
         g = ModdedSequenceGenerator(seq, static_mods=mods)
@@ -70,6 +82,7 @@ class TestModdedSequence(unittest.TestCase):
             print(i)
 
     def test_static_and_variable_mod_generator(self):
+        """Test the generator with both static and variable modifications."""
         seq = "TECSNTT"
         static_mods = [propiona]
         variable_mods = [nsequon, osequon, carbox, carbox2]

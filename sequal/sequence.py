@@ -88,6 +88,37 @@ class Sequence:
         peptidoform_ion_name: Optional[str] = None,
         compound_ion_name: Optional[str] = None,
     ):
+        """
+        Initializes a Sequence object.
+
+        Args:
+            seq (Union[str, List, "Sequence"]): A string, list of strings, or
+                list of AminoAcid objects.
+            encoder (Type[BaseBlock], optional): Class for encoding sequence
+                elements. Defaults to AminoAcid.
+            mods (Optional[Dict[int, Union[Modification, List[Modification]]]], optional):
+                Dictionary mapping positions to modifications. Defaults to None.
+            parse (bool, optional): Whether to parse the sequence. Defaults to True.
+            parser_ignore (Optional[List[str]], optional): List of elements to
+                ignore during parsing. Defaults to None.
+            mod_position (str, optional): Position of modifications relative to
+                their residue ("left" or "right"). Defaults to "right".
+            chains (Optional[List["Sequence"]], optional): List of chains in a
+                multi-chain sequence. Defaults to None.
+            global_mods (List[GlobalModification], optional): List of global
+                modifications. Defaults to None.
+            sequence_ambiguities (List[SequenceAmbiguity], optional): List of
+                sequence ambiguities. Defaults to None.
+            charge (optional): The charge of the sequence. Defaults to None.
+            ionic_species (optional): The ionic species of the sequence.
+                Defaults to None.
+            peptidoform_name (Optional[str], optional): The name of the
+                peptidoform. Defaults to None.
+            peptidoform_ion_name (Optional[str], optional): The name of the
+                peptidoform ion. Defaults to None.
+            compound_ion_name (Optional[str], optional): The name of the
+                compound ion. Defaults to None.
+        """
         self.encoder = encoder
         self.parser_ignore = parser_ignore or []
         self.seq: List[AminoAcid] = []
@@ -125,7 +156,15 @@ class Sequence:
 
     @classmethod
     def from_proforma(self, proforma_str):
-        """Create a Sequence object from a ProForma string with multi-chain support."""
+        """
+        Creates a Sequence object from a ProForma string.
+
+        Args:
+            proforma_str (str): The ProForma string.
+
+        Returns:
+            Sequence: The parsed Sequence object.
+        """
 
         if "//" in proforma_str:
             chains = proforma_str.split("//")
@@ -393,6 +432,16 @@ class Sequence:
         return result
 
     def get_mod_and_add_to_string(self, aa, result):
+        """
+        Gets modifications from an amino acid and adds them to the result string.
+
+        Args:
+            aa (AminoAcid): The amino acid.
+            result (str): The result string.
+
+        Returns:
+            str: The updated result string.
+        """
         mod_str = ""
         if aa.mods:
             for mod in aa.mods:
@@ -412,6 +461,12 @@ class Sequence:
         return result
 
     def to_proforma(self):
+        """
+        Converts the sequence to a ProForma string.
+
+        Returns:
+            str: The ProForma string representation of the sequence.
+        """
         if hasattr(self, "is_multi_chain") and self.is_multi_chain:
             result = "//".join(self._chain_to_proforma(chain) for chain in self.chains)
             return result
@@ -972,22 +1027,18 @@ class ModdedSequenceGenerator:
     This class creates all possible modified sequences by applying combinations
     of static and variable modifications to a base sequence.
 
-    Parameters
-    ----------
-    seq : str
-        The base sequence to modify.
-    variable_mods : List[Modification], optional
-        List of variable modifications to apply.
-    static_mods : List[Modification], optional
-        List of static modifications to apply.
-    used_scenarios : Set[str], optional
-        Set of serialized modification scenarios to avoid duplicates.
-    parse_mod_position : bool, optional
-        Whether to parse positions using modification regex patterns.
-    mod_position_dict : Dict[str, List[int]], optional
-        Pre-computed positions for modifications.
-    ignore_position : Set[int], optional
-        Set of positions to ignore when applying modifications.
+    Attributes:
+        seq (str): The base sequence to modify.
+        static_mods (List[Modification]): List of static modifications to apply.
+        variable_mods (List[Modification]): List of variable modifications to apply.
+        used_scenarios_set (Set[str]): Set of serialized modification scenarios
+            to avoid duplicates.
+        ignore_position (Set[int]): Set of positions to ignore when applying
+            modifications.
+        static_mod_position_dict (Dict[int, List[Modification]]): Dictionary of
+            positions for static modifications.
+        variable_map_scenarios (Dict[str, List[List[int]]]): Dictionary of
+            possible position combinations for each variable modification.
     """
 
     def __init__(
@@ -1000,6 +1051,24 @@ class ModdedSequenceGenerator:
         mod_position_dict: Optional[Dict[str, List[int]]] = None,
         ignore_position: Optional[Set[int]] = None,
     ):
+        """
+        Initializes a ModdedSequenceGenerator object.
+
+        Args:
+            seq (str): The base sequence to modify.
+            variable_mods (Optional[List[Modification]], optional): List of
+                variable modifications to apply. Defaults to None.
+            static_mods (Optional[List[Modification]], optional): List of
+                static modifications to apply. Defaults to None.
+            used_scenarios (Optional[Set[str]], optional): Set of serialized
+                modification scenarios to avoid duplicates. Defaults to None.
+            parse_mod_position (bool, optional): Whether to parse positions
+                using modification regex patterns. Defaults to True.
+            mod_position_dict (Optional[Dict[str, List[int]]], optional):
+                Pre-computed positions for modifications. Defaults to None.
+            ignore_position (Optional[Set[int]], optional): Set of positions
+                to ignore when applying modifications. Defaults to None.
+        """
         self.seq = seq
         self.static_mods = static_mods or []
         self.variable_mods = variable_mods or []
