@@ -169,6 +169,37 @@
         <span class="n">peptidoform_ion_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">compound_ion_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a Sequence object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            seq (Union[str, List, &quot;Sequence&quot;]): A string, list of strings, or</span>
+<span class="sd">                list of AminoAcid objects.</span>
+<span class="sd">            encoder (Type[BaseBlock], optional): Class for encoding sequence</span>
+<span class="sd">                elements. Defaults to AminoAcid.</span>
+<span class="sd">            mods (Optional[Dict[int, Union[Modification, List[Modification]]]], optional):</span>
+<span class="sd">                Dictionary mapping positions to modifications. Defaults to None.</span>
+<span class="sd">            parse (bool, optional): Whether to parse the sequence. Defaults to True.</span>
+<span class="sd">            parser_ignore (Optional[List[str]], optional): List of elements to</span>
+<span class="sd">                ignore during parsing. Defaults to None.</span>
+<span class="sd">            mod_position (str, optional): Position of modifications relative to</span>
+<span class="sd">                their residue (&quot;left&quot; or &quot;right&quot;). Defaults to &quot;right&quot;.</span>
+<span class="sd">            chains (Optional[List[&quot;Sequence&quot;]], optional): List of chains in a</span>
+<span class="sd">                multi-chain sequence. Defaults to None.</span>
+<span class="sd">            global_mods (List[GlobalModification], optional): List of global</span>
+<span class="sd">                modifications. Defaults to None.</span>
+<span class="sd">            sequence_ambiguities (List[SequenceAmbiguity], optional): List of</span>
+<span class="sd">                sequence ambiguities. Defaults to None.</span>
+<span class="sd">            charge (optional): The charge of the sequence. Defaults to None.</span>
+<span class="sd">            ionic_species (optional): The ionic species of the sequence.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            peptidoform_name (Optional[str], optional): The name of the</span>
+<span class="sd">                peptidoform. Defaults to None.</span>
+<span class="sd">            peptidoform_ion_name (Optional[str], optional): The name of the</span>
+<span class="sd">                peptidoform ion. Defaults to None.</span>
+<span class="sd">            compound_ion_name (Optional[str], optional): The name of the</span>
+<span class="sd">                compound ion. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parser_ignore</span> <span class="o">=</span> <span class="n">parser_ignore</span> <span class="ow">or</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">seq</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">AminoAcid</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
@@ -208,7 +239,15 @@
 <a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.from_proforma">[docs]</a>
     <span class="nd">@classmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">from_proforma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">proforma_str</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Sequence object from a ProForma string with multi-chain support.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Creates a Sequence object from a ProForma string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            proforma_str (str): The ProForma string.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Sequence: The parsed Sequence object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="s2">&quot;//&quot;</span> <span class="ow">in</span> <span class="n">proforma_str</span><span class="p">:</span>
             <span class="n">chains</span> <span class="o">=</span> <span class="n">proforma_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;//&quot;</span><span class="p">)</span>
@@ -479,6 +518,16 @@
 <div class="viewcode-block" id="Sequence.get_mod_and_add_to_string">
 <a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.get_mod_and_add_to_string">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_mod_and_add_to_string</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">aa</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets modifications from an amino acid and adds them to the result string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            aa (AminoAcid): The amino acid.</span>
+<span class="sd">            result (str): The result string.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The updated result string.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mod_str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="k">if</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">mod</span> <span class="ow">in</span> <span class="n">aa</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
@@ -501,6 +550,12 @@
 <div class="viewcode-block" id="Sequence.to_proforma">
 <a class="viewcode-back" href="../../sequence.html#sequal.sequence.Sequence.to_proforma">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_proforma</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts the sequence to a ProForma string.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The ProForma string representation of the sequence.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;is_multi_chain&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_multi_chain</span><span class="p">:</span>
             <span class="n">result</span> <span class="o">=</span> <span class="s2">&quot;//&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_chain_to_proforma</span><span class="p">(</span><span class="n">chain</span><span class="p">)</span> <span class="k">for</span> <span class="n">chain</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">chains</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">result</span>
@@ -1095,22 +1150,18 @@
 <span class="sd">    This class creates all possible modified sequences by applying combinations</span>
 <span class="sd">    of static and variable modifications to a base sequence.</span>
 
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    seq : str</span>
-<span class="sd">        The base sequence to modify.</span>
-<span class="sd">    variable_mods : List[Modification], optional</span>
-<span class="sd">        List of variable modifications to apply.</span>
-<span class="sd">    static_mods : List[Modification], optional</span>
-<span class="sd">        List of static modifications to apply.</span>
-<span class="sd">    used_scenarios : Set[str], optional</span>
-<span class="sd">        Set of serialized modification scenarios to avoid duplicates.</span>
-<span class="sd">    parse_mod_position : bool, optional</span>
-<span class="sd">        Whether to parse positions using modification regex patterns.</span>
-<span class="sd">    mod_position_dict : Dict[str, List[int]], optional</span>
-<span class="sd">        Pre-computed positions for modifications.</span>
-<span class="sd">    ignore_position : Set[int], optional</span>
-<span class="sd">        Set of positions to ignore when applying modifications.</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        seq (str): The base sequence to modify.</span>
+<span class="sd">        static_mods (List[Modification]): List of static modifications to apply.</span>
+<span class="sd">        variable_mods (List[Modification]): List of variable modifications to apply.</span>
+<span class="sd">        used_scenarios_set (Set[str]): Set of serialized modification scenarios</span>
+<span class="sd">            to avoid duplicates.</span>
+<span class="sd">        ignore_position (Set[int]): Set of positions to ignore when applying</span>
+<span class="sd">            modifications.</span>
+<span class="sd">        static_mod_position_dict (Dict[int, List[Modification]]): Dictionary of</span>
+<span class="sd">            positions for static modifications.</span>
+<span class="sd">        variable_map_scenarios (Dict[str, List[List[int]]]): Dictionary of</span>
+<span class="sd">            possible position combinations for each variable modification.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
@@ -1123,6 +1174,24 @@
         <span class="n">mod_position_dict</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">ignore_position</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Set</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a ModdedSequenceGenerator object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            seq (str): The base sequence to modify.</span>
+<span class="sd">            variable_mods (Optional[List[Modification]], optional): List of</span>
+<span class="sd">                variable modifications to apply. Defaults to None.</span>
+<span class="sd">            static_mods (Optional[List[Modification]], optional): List of</span>
+<span class="sd">                static modifications to apply. Defaults to None.</span>
+<span class="sd">            used_scenarios (Optional[Set[str]], optional): Set of serialized</span>
+<span class="sd">                modification scenarios to avoid duplicates. Defaults to None.</span>
+<span class="sd">            parse_mod_position (bool, optional): Whether to parse positions</span>
+<span class="sd">                using modification regex patterns. Defaults to True.</span>
+<span class="sd">            mod_position_dict (Optional[Dict[str, List[int]]], optional):</span>
+<span class="sd">                Pre-computed positions for modifications. Defaults to None.</span>
+<span class="sd">            ignore_position (Optional[Set[int]], optional): Set of positions</span>
+<span class="sd">                to ignore when applying modifications. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">seq</span> <span class="o">=</span> <span class="n">seq</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">static_mods</span> <span class="o">=</span> <span class="n">static_mods</span> <span class="ow">or</span> <span class="p">[]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variable_mods</span> <span class="o">=</span> <span class="n">variable_mods</span> <span class="ow">or</span> <span class="p">[]</span>

@@ -48,6 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="base_block.html">base_block</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">ion</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sequal.ion.Ion"><code class="docutils literal notranslate"><span class="pre">Ion</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.ion.Ion.charge"><code class="docutils literal notranslate"><span class="pre">Ion.charge</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.ion.Ion.ion_type"><code class="docutils literal notranslate"><span class="pre">Ion.ion_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.ion.Ion.fragment_number"><code class="docutils literal notranslate"><span class="pre">Ion.fragment_number</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.ion.Ion.mods"><code class="docutils literal notranslate"><span class="pre">Ion.mods</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.ion.Ion.has_labile"><code class="docutils literal notranslate"><span class="pre">Ion.has_labile</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sequal.ion.Ion.mz_calculate"><code class="docutils literal notranslate"><span class="pre">Ion.mz_calculate()</span></code></a></li>
 </ul>
 </li>
@@ -91,42 +96,85 @@
 <dt class="sig sig-object py" id="sequal.ion.Ion">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.ion.</span></span><span class="sig-name descname"><span class="pre">Ion</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">charge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ion_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fragment_number</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/ion.html#Ion"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.ion.Ion" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="sequence.html#sequal.sequence.Sequence" title="sequal.sequence.Sequence"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code></a></p>
-<p>Represents an ion fragment sequence object, inheriting properties from the Sequence class.</p>
-<p>This class is used to convert a Sequence object into an Ion fragment, with additional properties
-such as charge, ion type, and fragment number. It also handles modifications and labile groups
-within the sequence.</p>
+<p>Represents an ion fragment sequence, inheriting from the Sequence class.</p>
+<p>This class converts a Sequence object into an ion fragment, adding properties
+such as charge, ion type, and fragment number. It also handles modifications
+and labile groups within the sequence.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.ion.Ion.charge">
+<span class="sig-name descname"><span class="pre">charge</span></span><a class="headerlink" href="#sequal.ion.Ion.charge" title="Link to this definition"></a></dt>
+<dd><p>The charge of the ion.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>seq</strong> – Sequence
-The Sequence object to be converted into an Ion fragment.</p></li>
-<li><p><strong>charge</strong> – int, optional
-The charge of the ion (default is 1).</p></li>
-<li><p><strong>ion_type</strong> – str, optional
-The name of the transition type (default is None).</p></li>
-<li><p><strong>fragment_number</strong> – int, optional
-The number of the transition (default is None).</p></li>
-</ul>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.ion.Ion.ion_type">
+<span class="sig-name descname"><span class="pre">ion_type</span></span><a class="headerlink" href="#sequal.ion.Ion.ion_type" title="Link to this definition"></a></dt>
+<dd><p>The name of the transition type (e.g., ‘b’, ‘y’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.ion.Ion.fragment_number">
+<span class="sig-name descname"><span class="pre">fragment_number</span></span><a class="headerlink" href="#sequal.ion.Ion.fragment_number" title="Link to this definition"></a></dt>
+<dd><p>The number of the transition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.ion.Ion.mods">
+<span class="sig-name descname"><span class="pre">mods</span></span><a class="headerlink" href="#sequal.ion.Ion.mods" title="Link to this definition"></a></dt>
+<dd><p>A dictionary of modifications, with keys as positions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.ion.Ion.has_labile">
+<span class="sig-name descname"><span class="pre">has_labile</span></span><a class="headerlink" href="#sequal.ion.Ion.has_labile" title="Link to this definition"></a></dt>
+<dd><p>True if the ion has labile modifications.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.ion.Ion.mz_calculate">
 <span class="sig-name descname"><span class="pre">mz_calculate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">charge</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_water</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extra_mass</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/ion.html#Ion.mz_calculate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.ion.Ion.mz_calculate" title="Link to this definition"></a></dt>
-<dd><p>Calculate the mass-to-charge ratio (m/z) of the ion.</p>
+<dd><p>Calculates the mass-to-charge ratio (m/z) of the ion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>charge</strong> – int, optional
-The charge of the ion. If not specified, the object’s charge is used.</p></li>
-<li><p><strong>with_water</strong> – bool, optional
-Whether the mass will be calculated with or without water (default is False).</p></li>
-<li><p><strong>extra_mass</strong> – float, optional
-Extra modification of mass that is not represented within the sequence (default is 0).</p></li>
+<li><p><strong>charge</strong> (<em>int</em><em>, </em><em>optional</em>) – The charge of the ion. If not specified, the
+object’s charge is used. Defaults to None.</p></li>
+<li><p><strong>with_water</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether the mass will be calculated with
+or without water. Defaults to False.</p></li>
+<li><p><strong>extra_mass</strong> (<em>float</em><em>, </em><em>optional</em>) – Extra modification of mass that is not
+represented within the sequence. Defaults to 0.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>float
-The calculated m/z value of the ion.</p>
+<dd class="field-even"><p>The calculated m/z value of the ion.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
 </dd>
 </dl>
 </dd></dl>

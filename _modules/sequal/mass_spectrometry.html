@@ -78,14 +78,11 @@
              
   <h1>Source code for sequal.mass_spectrometry</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">This module provides functionality for fragmenting sequences into ion fragments for mass spectrometry analysis.</span>
+<span class="sd">Provides functionality for fragmenting sequences for mass spectrometry analysis.</span>
 
-<span class="sd">Classes:</span>
-<span class="sd">    FragmentFactory: A factory class for generating ion fragments from sequences.</span>
-
-<span class="sd">Functions:</span>
-<span class="sd">    fragment_non_labile(sequence, fragment_type): Calculate non-labile modifications and yield associated transitions.</span>
-<span class="sd">    fragment_labile(sequence): Calculate all labile modification variants for the sequence and its associated labile modifications.</span>
+<span class="sd">This module contains a factory class for generating ion fragments from sequences,</span>
+<span class="sd">along with functions for handling labile and non-labile modifications during</span>
+<span class="sd">fragmentation.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">sequal.ion</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ion</span>
@@ -99,17 +96,16 @@
 <a class="viewcode-back" href="../../mass_spectrometry.html#sequal.mass_spectrometry.fragment_non_labile">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fragment_non_labile</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">fragment_type</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Calculate non-labile modifications and yield associated transitions.</span>
+<span class="sd">    Calculates non-labile modifications and yields associated transitions.</span>
 
 <span class="sd">    For example, &quot;by&quot; would yield a tuple of &quot;b&quot; and &quot;y&quot; transitions.</span>
 
-<span class="sd">    :param sequence: sequal.sequence.Sequence</span>
-<span class="sd">        The sequence to be fragmented.</span>
-<span class="sd">    :param fragment_type: str</span>
-<span class="sd">        The type of fragment transition (e.g., &quot;by&quot;, &quot;ax&quot;).</span>
+<span class="sd">    Args:</span>
+<span class="sd">        sequence (sequal.sequence.Sequence): The sequence to be fragmented.</span>
+<span class="sd">        fragment_type (str): The type of fragment transition (e.g., &quot;by&quot;, &quot;ax&quot;).</span>
 
-<span class="sd">    :yield: tuple</span>
-<span class="sd">        A tuple containing the left and right ion fragments.</span>
+<span class="sd">    Yields:</span>
+<span class="sd">        tuple: A tuple containing the left and right ion fragments.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">sequence</span><span class="o">.</span><span class="n">seq_length</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
         <span class="n">left</span> <span class="o">=</span> <span class="n">Ion</span><span class="p">(</span><span class="n">sequence</span><span class="p">[:</span><span class="n">i</span><span class="p">],</span> <span class="n">fragment_number</span><span class="o">=</span><span class="n">i</span><span class="p">,</span> <span class="n">ion_type</span><span class="o">=</span><span class="n">fragment_type</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
@@ -126,13 +122,14 @@
 <a class="viewcode-back" href="../../mass_spectrometry.html#sequal.mass_spectrometry.fragment_labile">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">fragment_labile</span><span class="p">(</span><span class="n">sequence</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Calculate all labile modification variants for the sequence and its associated labile modifications.</span>
+<span class="sd">    Calculates all labile modification variants for the sequence.</span>
 
-<span class="sd">    :param sequence: sequal.sequence.Sequence</span>
-<span class="sd">        The sequence to be fragmented.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        sequence (sequal.sequence.Sequence): The sequence to be fragmented.</span>
 
-<span class="sd">    :return: Ion</span>
-<span class="sd">        An Ion object representing the fragmented sequence with labile modifications.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Ion: An Ion object representing the fragmented sequence with labile</span>
+<span class="sd">             modifications.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">fragment_number</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">sequence</span><span class="o">.</span><span class="n">mods</span><span class="p">:</span>
@@ -149,20 +146,19 @@
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    A factory class for generating ion fragments from sequences.</span>
 
-<span class="sd">    :param fragment_type: str</span>
-<span class="sd">        The type of fragment transition (e.g., &quot;by&quot;, &quot;ax&quot;).</span>
-<span class="sd">    :param ignore: list, optional</span>
-<span class="sd">        A list of modifications to ignore (default is None).</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        fragment_type (str): The type of fragment transition (e.g., &quot;by&quot;, &quot;ax&quot;).</span>
+<span class="sd">        ignore (list): A list of modifications to ignore.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fragment_type</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize a FragmentFactory object.</span>
+<span class="sd">        Initializes a FragmentFactory object.</span>
 
-<span class="sd">        :param fragment_type: str</span>
-<span class="sd">            The type of fragment transition (e.g., &quot;by&quot;, &quot;ax&quot;).</span>
-<span class="sd">        :param ignore: list, optional</span>
-<span class="sd">            A list of modifications to ignore (default is None).</span>
+<span class="sd">        Args:</span>
+<span class="sd">            fragment_type (str): The type of fragment transition (e.g., &quot;by&quot;, &quot;ax&quot;).</span>
+<span class="sd">            ignore (list, optional): A list of modifications to ignore.</span>
+<span class="sd">                Defaults to None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fragment_type</span> <span class="o">=</span> <span class="n">fragment_type</span>
         <span class="k">if</span> <span class="n">ignore</span><span class="p">:</span>
@@ -174,10 +170,10 @@
 <a class="viewcode-back" href="../../mass_spectrometry.html#sequal.mass_spectrometry.FragmentFactory.set_ignore">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">set_ignore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Set the list of modifications to ignore.</span>
+<span class="sd">        Sets the list of modifications to ignore.</span>
 
-<span class="sd">        :param ignore: list</span>
-<span class="sd">            A list of modifications to ignore.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            ignore (list): A list of modifications to ignore.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ignore</span> <span class="o">=</span> <span class="n">ignore</span></div>
 </div>

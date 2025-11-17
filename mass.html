@@ -87,28 +87,31 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sequal.mass.calculate_mass">
 <span class="sig-prename descclassname"><span class="pre">sequal.mass.</span></span><span class="sig-name descname"><span class="pre">calculate_mass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">seq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mass_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N_terminus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">O_terminus</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_water</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/mass.html#calculate_mass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.mass.calculate_mass" title="Link to this definition"></a></dt>
-<dd><p>Calculate the mass of a Sequence object using a mass dictionary of amino acids and modifications.</p>
+<dd><p>Calculates the mass of a Sequence object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>seq</strong> – sequal.sequence.Sequence
-A Sequence object representing the sequence of amino acids.</p></li>
-<li><p><strong>mass_dict</strong> – dict, optional
-A dictionary containing the masses of potential modifications and amino acids (default is None).</p></li>
-<li><p><strong>N_terminus</strong> – int or float, optional
-The mass at the N-terminus of the sequence (default is 0).</p></li>
-<li><p><strong>O_terminus</strong> – int or float, optional
-The mass at the C-terminus of the sequence (default is 0).</p></li>
-<li><p><strong>with_water</strong> – bool, optional
-Whether or not to add the mass of water (default is True).</p></li>
+<li><p><strong>seq</strong> (<a class="reference internal" href="sequence.html#sequal.sequence.Sequence" title="sequal.sequence.Sequence"><em>sequal.sequence.Sequence</em></a>) – A Sequence object representing the
+sequence of amino acids.</p></li>
+<li><p><strong>mass_dict</strong> (<em>dict</em><em>, </em><em>optional</em>) – A dictionary containing the masses of
+potential modifications and amino acids. Defaults to None.</p></li>
+<li><p><strong>N_terminus</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – The mass at the N-terminus of the
+sequence. Defaults to 0.</p></li>
+<li><p><strong>O_terminus</strong> (<em>int</em><em> or </em><em>float</em><em>, </em><em>optional</em>) – The mass at the C-terminus of the
+sequence. Defaults to 0.</p></li>
+<li><p><strong>with_water</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether or not to add the mass of water.
+Defaults to True.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>float
-The calculated mass of the sequence.</p>
+<dd class="field-even"><p>The calculated mass of the sequence.</p>
 </dd>
-<dt class="field-odd">Raises<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ValueError</strong> – If a block or modification mass is not available in the mass attribute and no additional mass_dict was supplied.</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If a block or modification mass is not available in the
+    mass attribute and no additional mass_dict was supplied.</p>
 </dd>
 </dl>
 </dd></dl>

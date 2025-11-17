@@ -50,6 +50,8 @@
 <li class="toctree-l1"><a class="reference internal" href="mass.html">mass</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">mass_spectrometry</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sequal.mass_spectrometry.FragmentFactory"><code class="docutils literal notranslate"><span class="pre">FragmentFactory</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.mass_spectrometry.FragmentFactory.fragment_type"><code class="docutils literal notranslate"><span class="pre">FragmentFactory.fragment_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.mass_spectrometry.FragmentFactory.ignore"><code class="docutils literal notranslate"><span class="pre">FragmentFactory.ignore</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sequal.mass_spectrometry.FragmentFactory.set_ignore"><code class="docutils literal notranslate"><span class="pre">FragmentFactory.set_ignore()</span></code></a></li>
 </ul>
 </li>
@@ -89,37 +91,44 @@
              
   <section id="module-sequal.mass_spectrometry">
 <span id="mass-spectrometry"></span><h1>mass_spectrometry<a class="headerlink" href="#module-sequal.mass_spectrometry" title="Link to this heading"></a></h1>
-<p>This module provides functionality for fragmenting sequences into ion fragments for mass spectrometry analysis.</p>
-<dl class="simple">
-<dt>Classes:</dt><dd><p>FragmentFactory: A factory class for generating ion fragments from sequences.</p>
-</dd>
-<dt>Functions:</dt><dd><p>fragment_non_labile(sequence, fragment_type): Calculate non-labile modifications and yield associated transitions.
-fragment_labile(sequence): Calculate all labile modification variants for the sequence and its associated labile modifications.</p>
-</dd>
-</dl>
+<p>Provides functionality for fragmenting sequences for mass spectrometry analysis.</p>
+<p>This module contains a factory class for generating ion fragments from sequences,
+along with functions for handling labile and non-labile modifications during
+fragmentation.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="sequal.mass_spectrometry.FragmentFactory">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.mass_spectrometry.</span></span><span class="sig-name descname"><span class="pre">FragmentFactory</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fragment_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ignore</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/mass_spectrometry.html#FragmentFactory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.mass_spectrometry.FragmentFactory" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>A factory class for generating ion fragments from sequences.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.mass_spectrometry.FragmentFactory.fragment_type">
+<span class="sig-name descname"><span class="pre">fragment_type</span></span><a class="headerlink" href="#sequal.mass_spectrometry.FragmentFactory.fragment_type" title="Link to this definition"></a></dt>
+<dd><p>The type of fragment transition (e.g., “by”, “ax”).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fragment_type</strong> – str
-The type of fragment transition (e.g., “by”, “ax”).</p></li>
-<li><p><strong>ignore</strong> – list, optional
-A list of modifications to ignore (default is None).</p></li>
-</ul>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.mass_spectrometry.FragmentFactory.ignore">
+<span class="sig-name descname"><span class="pre">ignore</span></span><a class="headerlink" href="#sequal.mass_spectrometry.FragmentFactory.ignore" title="Link to this definition"></a></dt>
+<dd><p>A list of modifications to ignore.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.mass_spectrometry.FragmentFactory.set_ignore">
 <span class="sig-name descname"><span class="pre">set_ignore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ignore</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/mass_spectrometry.html#FragmentFactory.set_ignore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.mass_spectrometry.FragmentFactory.set_ignore" title="Link to this definition"></a></dt>
-<dd><p>Set the list of modifications to ignore.</p>
+<dd><p>Sets the list of modifications to ignore.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ignore</strong> – list
-A list of modifications to ignore.</p>
+<dd class="field-odd"><p><strong>ignore</strong> (<em>list</em>) – A list of modifications to ignore.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -129,15 +138,20 @@ A list of modifications to ignore.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="sequal.mass_spectrometry.fragment_labile">
 <span class="sig-prename descclassname"><span class="pre">sequal.mass_spectrometry.</span></span><span class="sig-name descname"><span class="pre">fragment_labile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/mass_spectrometry.html#fragment_labile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.mass_spectrometry.fragment_labile" title="Link to this definition"></a></dt>
-<dd><p>Calculate all labile modification variants for the sequence and its associated labile modifications.</p>
+<dd><p>Calculates all labile modification variants for the sequence.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sequence</strong> – sequal.sequence.Sequence
-The sequence to be fragmented.</p>
+<dd class="field-odd"><p><strong>sequence</strong> (<a class="reference internal" href="sequence.html#sequal.sequence.Sequence" title="sequal.sequence.Sequence"><em>sequal.sequence.Sequence</em></a>) – The sequence to be fragmented.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Ion
-An Ion object representing the fragmented sequence with labile modifications.</p>
+<dd class="field-even"><p><dl class="simple">
+<dt>An Ion object representing the fragmented sequence with labile</dt><dd><p>modifications.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="ion.html#sequal.ion.Ion" title="sequal.ion.Ion">Ion</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -145,20 +159,17 @@ An Ion object representing the fragmented sequence with labile modifications.</p
 <dl class="py function">
 <dt class="sig sig-object py" id="sequal.mass_spectrometry.fragment_non_labile">
 <span class="sig-prename descclassname"><span class="pre">sequal.mass_spectrometry.</span></span><span class="sig-name descname"><span class="pre">fragment_non_labile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sequence</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fragment_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/mass_spectrometry.html#fragment_non_labile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.mass_spectrometry.fragment_non_labile" title="Link to this definition"></a></dt>
-<dd><p>Calculate non-labile modifications and yield associated transitions.</p>
+<dd><p>Calculates non-labile modifications and yields associated transitions.</p>
 <p>For example, “by” would yield a tuple of “b” and “y” transitions.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>sequence</strong> – sequal.sequence.Sequence
-The sequence to be fragmented.</p></li>
-<li><p><strong>fragment_type</strong> – str
-The type of fragment transition (e.g., “by”, “ax”).</p></li>
+<li><p><strong>sequence</strong> (<a class="reference internal" href="sequence.html#sequal.sequence.Sequence" title="sequal.sequence.Sequence"><em>sequal.sequence.Sequence</em></a>) – The sequence to be fragmented.</p></li>
+<li><p><strong>fragment_type</strong> (<em>str</em>) – The type of fragment transition (e.g., “by”, “ax”).</p></li>
 </ul>
 </dd>
-<dt class="field-even">Yield<span class="colon">:</span></dt>
-<dd class="field-even"><p>tuple
-A tuple containing the left and right ion fragments.</p>
+<dt class="field-even">Yields<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>tuple</em> – A tuple containing the left and right ion fragments.</p>
 </dd>
 </dl>
 </dd></dl>

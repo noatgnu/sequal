@@ -90,34 +90,29 @@
 <a class="viewcode-back" href="../../ion.html#sequal.ion.Ion">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Ion</span><span class="p">(</span><span class="n">Sequence</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Represents an ion fragment sequence object, inheriting properties from the Sequence class.</span>
+<span class="sd">    Represents an ion fragment sequence, inheriting from the Sequence class.</span>
 
-<span class="sd">    This class is used to convert a Sequence object into an Ion fragment, with additional properties</span>
-<span class="sd">    such as charge, ion type, and fragment number. It also handles modifications and labile groups</span>
-<span class="sd">    within the sequence.</span>
+<span class="sd">    This class converts a Sequence object into an ion fragment, adding properties</span>
+<span class="sd">    such as charge, ion type, and fragment number. It also handles modifications</span>
+<span class="sd">    and labile groups within the sequence.</span>
 
-<span class="sd">    :param seq: Sequence</span>
-<span class="sd">        The Sequence object to be converted into an Ion fragment.</span>
-<span class="sd">    :param charge: int, optional</span>
-<span class="sd">        The charge of the ion (default is 1).</span>
-<span class="sd">    :param ion_type: str, optional</span>
-<span class="sd">        The name of the transition type (default is None).</span>
-<span class="sd">    :param fragment_number: int, optional</span>
-<span class="sd">        The number of the transition (default is None).</span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        charge (int): The charge of the ion.</span>
+<span class="sd">        ion_type (str): The name of the transition type (e.g., &#39;b&#39;, &#39;y&#39;).</span>
+<span class="sd">        fragment_number (int): The number of the transition.</span>
+<span class="sd">        mods (dict): A dictionary of modifications, with keys as positions.</span>
+<span class="sd">        has_labile (bool): True if the ion has labile modifications.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">seq</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">ion_type</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fragment_number</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize an Ion object.</span>
+<span class="sd">        Initializes an Ion object.</span>
 
-<span class="sd">        :param seq: Sequence</span>
-<span class="sd">            The Sequence object to be converted into an Ion fragment.</span>
-<span class="sd">        :param charge: int, optional</span>
-<span class="sd">            The charge of the ion (default is 1).</span>
-<span class="sd">        :param ion_type: str, optional</span>
-<span class="sd">            The name of the transition type (default is None).</span>
-<span class="sd">        :param fragment_number: int, optional</span>
-<span class="sd">            The number of the transition (default is None).</span>
+<span class="sd">        Args:</span>
+<span class="sd">            seq (Sequence): The Sequence object to be converted into an Ion fragment.</span>
+<span class="sd">            charge (int, optional): The charge of the ion. Defaults to 1.</span>
+<span class="sd">            ion_type (str, optional): The name of the transition type. Defaults to None.</span>
+<span class="sd">            fragment_number (int, optional): The number of the transition. Defaults to None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">charge</span> <span class="o">=</span> <span class="n">charge</span>
@@ -138,17 +133,18 @@
 <a class="viewcode-back" href="../../ion.html#sequal.ion.Ion.mz_calculate">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">mz_calculate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">charge</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">with_water</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">extra_mass</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Calculate the mass-to-charge ratio (m/z) of the ion.</span>
+<span class="sd">        Calculates the mass-to-charge ratio (m/z) of the ion.</span>
 
-<span class="sd">        :param charge: int, optional</span>
-<span class="sd">            The charge of the ion. If not specified, the object&#39;s charge is used.</span>
-<span class="sd">        :param with_water: bool, optional</span>
-<span class="sd">            Whether the mass will be calculated with or without water (default is False).</span>
-<span class="sd">        :param extra_mass: float, optional</span>
-<span class="sd">            Extra modification of mass that is not represented within the sequence (default is 0).</span>
+<span class="sd">        Args:</span>
+<span class="sd">            charge (int, optional): The charge of the ion. If not specified, the</span>
+<span class="sd">                object&#39;s charge is used. Defaults to None.</span>
+<span class="sd">            with_water (bool, optional): Whether the mass will be calculated with</span>
+<span class="sd">                or without water. Defaults to False.</span>
+<span class="sd">            extra_mass (float, optional): Extra modification of mass that is not</span>
+<span class="sd">                represented within the sequence. Defaults to 0.</span>
 
-<span class="sd">        :return: float</span>
-<span class="sd">            The calculated m/z value of the ion.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            float: The calculated m/z value of the ion.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">charge</span><span class="p">:</span>
             <span class="n">charge</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">charge</span>

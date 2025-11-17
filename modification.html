@@ -51,6 +51,8 @@
 <li class="toctree-l1"><a class="reference internal" href="mass_spectrometry.html">mass_spectrometry</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">modification</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sequal.modification.GlobalModification"><code class="docutils literal notranslate"><span class="pre">GlobalModification</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.GlobalModification.target_residues"><code class="docutils literal notranslate"><span class="pre">GlobalModification.target_residues</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.modification.GlobalModification.global_mod_type"><code class="docutils literal notranslate"><span class="pre">GlobalModification.global_mod_type</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sequal.modification.GlobalModification.to_proforma"><code class="docutils literal notranslate"><span class="pre">GlobalModification.to_proforma()</span></code></a></li>
 </ul>
 </li>
@@ -161,10 +163,41 @@
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">sequal.modification.</span></span><span class="sig-name descname"><span class="pre">GlobalModification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_residues</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mod_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'isotope'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#GlobalModification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.GlobalModification" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#sequal.modification.Modification" title="sequal.modification.Modification"><code class="xref py py-class docutils literal notranslate"><span class="pre">Modification</span></code></a></p>
 <p>Represents a global modification that applies to specified residues.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.GlobalModification.target_residues">
+<span class="sig-name descname"><span class="pre">target_residues</span></span><a class="headerlink" href="#sequal.modification.GlobalModification.target_residues" title="Link to this definition"></a></dt>
+<dd><p>For fixed modifications, the
+target residue types (e.g., [“C”, “M”]).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[List[str]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.modification.GlobalModification.global_mod_type">
+<span class="sig-name descname"><span class="pre">global_mod_type</span></span><a class="headerlink" href="#sequal.modification.GlobalModification.global_mod_type" title="Link to this definition"></a></dt>
+<dd><p>Type of global modification: “isotope” or “fixed”.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.GlobalModification.to_proforma">
 <span class="sig-name descname"><span class="pre">to_proforma</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#GlobalModification.to_proforma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.GlobalModification.to_proforma" title="Link to this definition"></a></dt>
-<dd><p>Convert to ProForma notation.</p>
+<dd><p>Converts to ProForma notation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The ProForma notation string.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -199,19 +232,34 @@ properties like regex patterns, modification types, and fragmentation behavior.<
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.all_filled">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">all_filled</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.Modification.all_filled" title="Link to this definition"></a></dt>
-<dd><p>Check if the modification occurs at all expected sites.</p>
+<dd><p>True if the modification occurs at all expected sites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.ambiguity_group">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ambiguity_group</span></span><a class="headerlink" href="#sequal.modification.Modification.ambiguity_group" title="Link to this definition"></a></dt>
-<dd><p>Get the ambiguity group of the modification.</p>
+<dd><p>The ambiguity group of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.crosslink_id">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">crosslink_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.crosslink_id" title="Link to this definition"></a></dt>
-<dd><p>Get the crosslink identifier.</p>
+<dd><p>The crosslink identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -234,109 +282,211 @@ properties like regex patterns, modification types, and fragmentation behavior.<
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.full_name">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">full_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.full_name" title="Link to this definition"></a></dt>
-<dd><p>Get the full descriptive name of the modification.</p>
+<dd><p>The full descriptive name of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.Modification.has_ambiguity">
 <span class="sig-name descname"><span class="pre">has_ambiguity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.has_ambiguity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.has_ambiguity" title="Link to this definition"></a></dt>
-<dd><p>Check if the modification has ambiguity.</p>
+<dd><p>Checks if the modification has ambiguity.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the modification has ambiguity, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.Modification.has_branch">
 <span class="sig-name descname"><span class="pre">has_branch</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.has_branch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.has_branch" title="Link to this definition"></a></dt>
-<dd><p>Check if the modification has branch.</p>
+<dd><p>Checks if the modification has a branch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the modification has a branch, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.Modification.has_crosslink">
 <span class="sig-name descname"><span class="pre">has_crosslink</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.has_crosslink"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.has_crosslink" title="Link to this definition"></a></dt>
-<dd><p>Check if the modification has crosslink.</p>
+<dd><p>Checks if the modification has a crosslink.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the modification has a crosslink, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.info_tags">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">info_tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.Modification.info_tags" title="Link to this definition"></a></dt>
-<dd><p>Get the list of information tags associated with the modification.</p>
+<dd><p>A list of information tags associated with the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[str]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.is_ambiguity_ref">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_ambiguity_ref</span></span><a class="headerlink" href="#sequal.modification.Modification.is_ambiguity_ref" title="Link to this definition"></a></dt>
-<dd><p>Check if the modification is an ambiguity reference.</p>
+<dd><p>True if the modification is an ambiguity reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.is_crosslink_ref">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_crosslink_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.Modification.is_crosslink_ref" title="Link to this definition"></a></dt>
-<dd><p>Check if this modification is a crosslink reference.</p>
+<dd><p>True if this modification is a crosslink reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.labile">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">labile</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.Modification.labile" title="Link to this definition"></a></dt>
-<dd><p>Check if the modification is labile.</p>
+<dd><p>True if the modification is labile.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.labile_number">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">labile_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#sequal.modification.Modification.labile_number" title="Link to this definition"></a></dt>
-<dd><p>Get the labile fragmentation order number.</p>
+<dd><p>The labile fragmentation order number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.mass">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mass</span></span><a class="headerlink" href="#sequal.modification.Modification.mass" title="Link to this definition"></a></dt>
-<dd><p>Get the mass of the modification.</p>
+<dd><p>The mass of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.mod_type">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mod_type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.Modification.mod_type" title="Link to this definition"></a></dt>
-<dd><p>Get the modification type (static or variable).</p>
+<dd><p>The modification type (e.g., ‘static’, ‘variable’).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.mod_value">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mod_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#sequal.modification.ModificationValue" title="sequal.modification.ModificationValue"><span class="pre">ModificationValue</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.mod_value" title="Link to this definition"></a></dt>
-<dd><p>Get the modification value object.</p>
+<dd><p>The modification value object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[<a class="reference internal" href="#sequal.modification.ModificationValue" title="sequal.modification.ModificationValue">ModificationValue</a>]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.observed_mass">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">observed_mass</span></span><a class="headerlink" href="#sequal.modification.Modification.observed_mass" title="Link to this definition"></a></dt>
-<dd><p>Get the observed mass of the modification.</p>
+<dd><p>The observed mass of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.original_value">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">original_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.Modification.original_value" title="Link to this definition"></a></dt>
-<dd><p>Get the original value including any source prefix.</p>
+<dd><p>The original value including any source prefix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.regex">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">regex</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Pattern</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.regex" title="Link to this definition"></a></dt>
-<dd><p>Get the compiled regex pattern for finding modification sites.</p>
+<dd><p>The compiled regex pattern for finding modification sites.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[Pattern]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.source">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.Modification.source" title="Link to this definition"></a></dt>
-<dd><p>Get the modification database source.</p>
+<dd><p>The modification database source.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.synonyms">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">synonyms</span></span><a class="headerlink" href="#sequal.modification.Modification.synonyms" title="Link to this definition"></a></dt>
-<dd><p>Get the synonyms of the modification.</p>
+<dd><p>A list of synonyms for the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[str]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.Modification.to_dict">
 <span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/modification.html#Modification.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.Modification.to_dict" title="Link to this definition"></a></dt>
-<dd><p>Convert the modification to a dictionary representation.</p>
+<dd><p>Converts the modification to a dictionary representation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary containing the modification’s attributes.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dict[str, Any]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -356,7 +506,12 @@ properties like regex patterns, modification types, and fragmentation behavior.<
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.Modification.value">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">value</span></span><a class="headerlink" href="#sequal.modification.Modification.value" title="Link to this definition"></a></dt>
-<dd><p>Get the modification value.</p>
+<dd><p>The modification value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -479,72 +634,158 @@ modification objects by name or position.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.ambiguity_group">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ambiguity_group</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.ambiguity_group" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The ambiguity group of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.crosslink_id">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">crosslink_id</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.crosslink_id" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The crosslink identifier.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.info_tags">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">info_tags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.ModificationValue.info_tags" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>A list of information tags.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[str]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_ambiguity_ref">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_ambiguity_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_ambiguity_ref" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>True if the modification is an ambiguity reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_branch">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_branch</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_branch" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>True if the modification is a branch.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_branch_ref">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_branch_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_branch_ref" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>True if the modification is a branch reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.is_crosslink_ref">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_crosslink_ref</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.is_crosslink_ref" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>True if the modification is a crosslink reference.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.mass">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">mass</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.mass" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The mass of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[float]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.observed_mass">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">observed_mass</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.observed_mass" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The observed mass of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.pipe_values">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pipe_values</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#sequal.modification.PipeValue" title="sequal.modification.PipeValue"><span class="pre">PipeValue</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.ModificationValue.pipe_values" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>A list of PipeValue objects.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="#sequal.modification.PipeValue" title="sequal.modification.PipeValue">PipeValue</a>]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.primary_value">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">primary_value</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.primary_value" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The primary value of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.source">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#sequal.modification.ModificationValue.source" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The source of the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.synonyms">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">synonyms</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#sequal.modification.ModificationValue.synonyms" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>A list of synonyms for the modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[str]</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.ModificationValue.to_string">
 <span class="sig-name descname"><span class="pre">to_string</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="_modules/sequal/modification.html#ModificationValue.to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.ModificationValue.to_string" title="Link to this definition"></a></dt>
-<dd><p>Convert to string representation for ProForma output.</p>
+<dd><p>Converts to string representation for ProForma output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The ProForma string representation.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -607,13 +848,24 @@ modification objects by name or position.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.modification.PipeValue.assign_type">
 <span class="sig-name descname"><span class="pre">assign_type</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/modification.html#PipeValue.assign_type"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.modification.PipeValue.assign_type" title="Link to this definition"></a></dt>
-<dd><p>Assign a type to the PipeValue.</p>
+<dd><p>Assigns a type to the PipeValue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>str</em>) – The type to assign.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="sequal.modification.PipeValue.type">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#sequal.modification.PipeValue.type" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>The type of the pipe-separated component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

@@ -53,6 +53,13 @@
 <li class="toctree-l1"><a class="reference internal" href="resources.html">resources</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">sequence</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.seq"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.seq</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.static_mods"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.static_mods</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.variable_mods"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.variable_mods</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.used_scenarios_set"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.used_scenarios_set</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.ignore_position"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.ignore_position</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.static_mod_position_dict"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.static_mod_position_dict</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.variable_map_scenarios"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.variable_map_scenarios</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#sequal.sequence.ModdedSequenceGenerator.generate"><code class="docutils literal notranslate"><span class="pre">ModdedSequenceGenerator.generate()</span></code></a></li>
 </ul>
 </li>
@@ -120,19 +127,87 @@ ordered_serialize_position_dict(positions): Serializes a dictionary of positions
 <p>Generator for sequences with different modification combinations.</p>
 <p>This class creates all possible modified sequences by applying combinations
 of static and variable modifications to a base sequence.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.seq">
+<span class="sig-name descname"><span class="pre">seq</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.seq" title="Link to this definition"></a></dt>
+<dd><p>The base sequence to modify.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>seq</strong> (<em>str</em>) – The base sequence to modify.</p></li>
-<li><p><strong>variable_mods</strong> (<em>List</em><em>[</em><a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification"><em>Modification</em></a><em>]</em><em>, </em><em>optional</em>) – List of variable modifications to apply.</p></li>
-<li><p><strong>static_mods</strong> (<em>List</em><em>[</em><a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification"><em>Modification</em></a><em>]</em><em>, </em><em>optional</em>) – List of static modifications to apply.</p></li>
-<li><p><strong>used_scenarios</strong> (<em>Set</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – Set of serialized modification scenarios to avoid duplicates.</p></li>
-<li><p><strong>parse_mod_position</strong> (<em>bool</em><em>, </em><em>optional</em>) – Whether to parse positions using modification regex patterns.</p></li>
-<li><p><strong>mod_position_dict</strong> (<em>Dict</em><em>[</em><em>str</em><em>, </em><em>List</em><em>[</em><em>int</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – Pre-computed positions for modifications.</p></li>
-<li><p><strong>ignore_position</strong> (<em>Set</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – Set of positions to ignore when applying modifications.</p></li>
-</ul>
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.static_mods">
+<span class="sig-name descname"><span class="pre">static_mods</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.static_mods" title="Link to this definition"></a></dt>
+<dd><p>List of static modifications to apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification">Modification</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.variable_mods">
+<span class="sig-name descname"><span class="pre">variable_mods</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.variable_mods" title="Link to this definition"></a></dt>
+<dd><p>List of variable modifications to apply.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List[<a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification">Modification</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.used_scenarios_set">
+<span class="sig-name descname"><span class="pre">used_scenarios_set</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.used_scenarios_set" title="Link to this definition"></a></dt>
+<dd><p>Set of serialized modification scenarios
+to avoid duplicates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Set[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.ignore_position">
+<span class="sig-name descname"><span class="pre">ignore_position</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.ignore_position" title="Link to this definition"></a></dt>
+<dd><p>Set of positions to ignore when applying
+modifications.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Set[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.static_mod_position_dict">
+<span class="sig-name descname"><span class="pre">static_mod_position_dict</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.static_mod_position_dict" title="Link to this definition"></a></dt>
+<dd><p>Dictionary of
+positions for static modifications.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[int, List[<a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification">Modification</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.variable_map_scenarios">
+<span class="sig-name descname"><span class="pre">variable_map_scenarios</span></span><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.variable_map_scenarios" title="Link to this definition"></a></dt>
+<dd><p>Dictionary of
+possible position combinations for each variable modification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[str, List[List[int]]]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.sequence.ModdedSequenceGenerator.generate">
 <span class="sig-name descname"><span class="pre">generate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="modification.html#sequal.modification.Modification" title="sequal.modification.Modification"><span class="pre">Modification</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="_modules/sequal/sequence.html#ModdedSequenceGenerator.generate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.sequence.ModdedSequenceGenerator.generate" title="Link to this definition"></a></dt>
@@ -218,7 +293,18 @@ recursively parse each element to identify amino acids and modifications.</p></l
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.sequence.Sequence.from_proforma">
 <em class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_proforma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">proforma_str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/sequence.html#Sequence.from_proforma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.sequence.Sequence.from_proforma" title="Link to this definition"></a></dt>
-<dd><p>Create a Sequence object from a ProForma string with multi-chain support.</p>
+<dd><p>Creates a Sequence object from a ProForma string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>proforma_str</strong> (<em>str</em>) – The ProForma string.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The parsed Sequence object.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#sequal.sequence.Sequence" title="sequal.sequence.Sequence">Sequence</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -238,7 +324,22 @@ recursively parse each element to identify amino acids and modifications.</p></l
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.sequence.Sequence.get_mod_and_add_to_string">
 <span class="sig-name descname"><span class="pre">get_mod_and_add_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">aa</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">result</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/sequence.html#Sequence.get_mod_and_add_to_string"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.sequence.Sequence.get_mod_and_add_to_string" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Gets modifications from an amino acid and adds them to the result string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>aa</strong> (<a class="reference internal" href="amino_acid.html#sequal.amino_acid.AminoAcid" title="sequal.amino_acid.AminoAcid"><em>AminoAcid</em></a>) – The amino acid.</p></li>
+<li><p><strong>result</strong> (<em>str</em>) – The result string.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The updated result string.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.sequence.Sequence.to_dict">
@@ -257,7 +358,16 @@ recursively parse each element to identify amino acids and modifications.</p></l
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.sequence.Sequence.to_proforma">
 <span class="sig-name descname"><span class="pre">to_proforma</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/sequal/sequence.html#Sequence.to_proforma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#sequal.sequence.Sequence.to_proforma" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Converts the sequence to a ProForma string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The ProForma string representation of the sequence.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="sequal.sequence.Sequence.to_string_customize">

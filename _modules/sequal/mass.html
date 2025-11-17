@@ -84,24 +84,26 @@
 <a class="viewcode-back" href="../../mass.html#sequal.mass.calculate_mass">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">calculate_mass</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">mass_dict</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">N_terminus</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">O_terminus</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">with_water</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Calculate the mass of a Sequence object using a mass dictionary of amino acids and modifications.</span>
+<span class="sd">    Calculates the mass of a Sequence object.</span>
 
-<span class="sd">    :param seq: sequal.sequence.Sequence</span>
-<span class="sd">        A Sequence object representing the sequence of amino acids.</span>
-<span class="sd">    :param mass_dict: dict, optional</span>
-<span class="sd">        A dictionary containing the masses of potential modifications and amino acids (default is None).</span>
-<span class="sd">    :param N_terminus: int or float, optional</span>
-<span class="sd">        The mass at the N-terminus of the sequence (default is 0).</span>
-<span class="sd">    :param O_terminus: int or float, optional</span>
-<span class="sd">        The mass at the C-terminus of the sequence (default is 0).</span>
-<span class="sd">    :param with_water: bool, optional</span>
-<span class="sd">        Whether or not to add the mass of water (default is True).</span>
+<span class="sd">    Args:</span>
+<span class="sd">        seq (sequal.sequence.Sequence): A Sequence object representing the</span>
+<span class="sd">            sequence of amino acids.</span>
+<span class="sd">        mass_dict (dict, optional): A dictionary containing the masses of</span>
+<span class="sd">            potential modifications and amino acids. Defaults to None.</span>
+<span class="sd">        N_terminus (int or float, optional): The mass at the N-terminus of the</span>
+<span class="sd">            sequence. Defaults to 0.</span>
+<span class="sd">        O_terminus (int or float, optional): The mass at the C-terminus of the</span>
+<span class="sd">            sequence. Defaults to 0.</span>
+<span class="sd">        with_water (bool, optional): Whether or not to add the mass of water.</span>
+<span class="sd">            Defaults to True.</span>
 
-<span class="sd">    :return: float</span>
-<span class="sd">        The calculated mass of the sequence.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        float: The calculated mass of the sequence.</span>
 
-<span class="sd">    :raises ValueError:</span>
-<span class="sd">        If a block or modification mass is not available in the mass attribute and no additional mass_dict was supplied.</span>
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If a block or modification mass is not available in the</span>
+<span class="sd">            mass attribute and no additional mass_dict was supplied.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">mass</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">if</span> <span class="n">with_water</span><span class="p">:</span>

@@ -104,26 +104,16 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_find_balanced_paren</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">start</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Find the closing parenthesis matching the opening one at start.</span>
+<span class="sd">        Finds the closing parenthesis matching the opening one at start.</span>
 
 <span class="sd">        Handles nested parentheses correctly for ProForma 2.1 named entities.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        s : str</span>
-<span class="sd">            The string to search</span>
-<span class="sd">        start : int</span>
-<span class="sd">            The position of the opening parenthesis</span>
+<span class="sd">        Args:</span>
+<span class="sd">            s (str): The string to search.</span>
+<span class="sd">            start (int): The position of the opening parenthesis.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        int</span>
-<span class="sd">            Position of the matching closing parenthesis, or -1 if not found</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        &quot;(&gt;Simple name)&quot; → finds position 13</span>
-<span class="sd">        &quot;(&gt;Name (with parens))&quot; → finds position 19</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Position of the matching closing parenthesis, or -1 if not found.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">start</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="ow">or</span> <span class="n">s</span><span class="p">[</span><span class="n">start</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;(&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>
@@ -153,17 +143,20 @@
         <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
     <span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Parse a ProForma string into a base sequence and modifications.</span>
+<span class="sd">        Parses a ProForma string into a base sequence and modifications.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        proforma_str : str</span>
-<span class="sd">            ProForma formatted peptide string</span>
+<span class="sd">        Args:</span>
+<span class="sd">            proforma_str (str): ProForma formatted peptide string.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Tuple[str, Dict[int, List[Modification]]]</span>
-<span class="sd">            Base sequence and modifications dictionary</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[str, Dict[int, List[Modification]], List[GlobalModification], List[&quot;SequenceAmbiguity&quot;], Optional[Tuple[int, str]], Dict[str, Optional[str]]]:</span>
+<span class="sd">                A tuple containing:</span>
+<span class="sd">                    - The base sequence.</span>
+<span class="sd">                    - A dictionary of modifications keyed by position.</span>
+<span class="sd">                    - A list of global modifications.</span>
+<span class="sd">                    - A list of sequence ambiguities.</span>
+<span class="sd">                    - A tuple of charge and ionic species.</span>
+<span class="sd">                    - A dictionary of names.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">base_sequence</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
         <span class="n">modifications</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">list</span><span class="p">)</span>
@@ -571,17 +564,16 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_charge_info</span><span class="p">(</span><span class="n">proforma_str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Parse charge information from a ProForma string without using regex.</span>
+<span class="sd">        Parses charge information from a ProForma string.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        proforma_str : str</span>
-<span class="sd">            The ProForma string to parse</span>
+<span class="sd">        Args:</span>
+<span class="sd">            proforma_str (str): The ProForma string to parse.</span>
 
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        tuple</span>
-<span class="sd">            (updated_proforma_str, charge_value, ionic_species)</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple: A tuple containing:</span>
+<span class="sd">                - The updated ProForma string.</span>
+<span class="sd">                - The charge value.</span>
+<span class="sd">                - The ionic species.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">proforma_str</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">proforma_str</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
@@ -652,36 +644,15 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_parse_placement_controls</span><span class="p">(</span><span class="n">mod_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Parse placement control tags from a modification string.</span>
+<span class="sd">        Parses placement control tags from a modification string.</span>
 
-<span class="sd">        ProForma 2.1 Section 11.2: Placement controls for modifications of unknown position.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            mod_str (str): Modification string that may contain placement controls.</span>
 
-<span class="sd">        Supported tags:</span>
-<span class="sd">        - Position:&lt;positions&gt; - List of allowed positions</span>
-<span class="sd">        - Limit:&lt;number&gt; - Max occurrences per position</span>
-<span class="sd">        - CoMKP or ColocaliseModificationsOfKnownPosition - Can colocalize with known mods</span>
-<span class="sd">        - CoMUP or ColocaliseModificationsOfUnknownPosition - Can colocalize with unknown mods</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        mod_str : str</span>
-<span class="sd">            Modification string that may contain placement controls</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Tuple[str, Dict]</span>
-<span class="sd">            (cleaned_mod_str, controls_dict) where cleaned_mod_str has controls removed</span>
-<span class="sd">            and controls_dict contains:</span>
-<span class="sd">            - position_constraint: List[str] or None</span>
-<span class="sd">            - limit_per_position: int (default 1)</span>
-<span class="sd">            - colocalize_known: bool</span>
-<span class="sd">            - colocalize_unknown: bool</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        &quot;[Oxidation|Position:M]&quot; → (&quot;Oxidation&quot;, {position_constraint: [&quot;M&quot;], ...})</span>
-<span class="sd">        &quot;[Oxidation|Limit:2]&quot; → (&quot;Oxidation&quot;, {limit_per_position: 2, ...})</span>
-<span class="sd">        &quot;[Oxidation|CoMKP]&quot; → (&quot;Oxidation&quot;, {colocalize_known: True, ...})</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[str, Dict]: A tuple containing:</span>
+<span class="sd">                - The cleaned modification string with controls removed.</span>
+<span class="sd">                - A dictionary of placement controls.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">controls</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">&quot;position_constraint&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
@@ -722,28 +693,13 @@
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_is_ion_type_modification</span><span class="p">(</span><span class="n">mod_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Check if a modification represents an ion type.</span>
+<span class="sd">        Checks if a modification represents an ion type.</span>
 
-<span class="sd">        ProForma 2.1 Section 11.6: MSn precursor ions are indicated using</span>
-<span class="sd">        ion type modifications like &#39;a-type-ion&#39;, &#39;b-type-ion&#39;, etc.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            mod_str (str): Modification string to check.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        mod_str : str</span>
-<span class="sd">            Modification string to check</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        bool</span>
-<span class="sd">            True if modification is an ion type</span>
-
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
-<span class="sd">        &quot;a-type-ion&quot; → True</span>
-<span class="sd">        &quot;b-type-ion&quot; → True</span>
-<span class="sd">        &quot;UNIMOD:140&quot; → True (a-type-ion)</span>
-<span class="sd">        &quot;UNIMOD:2132&quot; → True (b-type-ion)</span>
-<span class="sd">        &quot;Oxidation&quot; → False</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if the modification is an ion type, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mod_str_lower</span> <span class="o">=</span> <span class="n">mod_str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
 
@@ -786,32 +742,35 @@
         <span class="n">range_end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Modification</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Create a Modification object from a ProForma modification string.</span>
+<span class="sd">        Creates a Modification object from a ProForma modification string.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        mod_str : str</span>
-<span class="sd">            Modification string from ProForma notation</span>
-<span class="sd">        is_terminal : bool</span>
-<span class="sd">            Whether this is a terminal modification</span>
-<span class="sd">        is_ambiguous : bool</span>
-<span class="sd">            Whether this is an ambiguous modification</span>
-<span class="sd">        crosslink_id : str, optional</span>
-<span class="sd">            The crosslink identifier, if applicable</span>
-<span class="sd">        is_crosslink_ref : bool</span>
-<span class="sd">            Whether this is a crosslink reference</span>
-<span class="sd">        is_branch : bool</span>
-<span class="sd">            Whether this is a branch modification</span>
-<span class="sd">        is_branch_ref : bool</span>
-<span class="sd">            Whether this is a branch reference</span>
-<span class="sd">        is_gap : bool</span>
-<span class="sd">            Whether this is a gap modification</span>
+<span class="sd">        Args:</span>
+<span class="sd">            mod_str (str): Modification string from ProForma notation.</span>
+<span class="sd">            is_terminal (bool, optional): Whether this is a terminal modification.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            is_ambiguous (bool, optional): Whether this is an ambiguous</span>
+<span class="sd">                modification. Defaults to False.</span>
+<span class="sd">            is_labile (bool, optional): Whether this is a labile modification.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            is_unknown_position (bool, optional): Whether this is a modification</span>
+<span class="sd">                of unknown position. Defaults to False.</span>
+<span class="sd">            crosslink_id (str, optional): The crosslink identifier, if applicable.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">            is_crosslink_ref (bool, optional): Whether this is a crosslink</span>
+<span class="sd">                reference. Defaults to False.</span>
+<span class="sd">            is_branch (bool, optional): Whether this is a branch modification.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            is_branch_ref (bool, optional): Whether this is a branch reference.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            is_gap (bool, optional): Whether this is a gap modification.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            in_range (bool, optional): Whether this modification is in a range.</span>
+<span class="sd">                Defaults to False.</span>
+<span class="sd">            range_start (int, optional): The start of the range. Defaults to None.</span>
+<span class="sd">            range_end (int, optional): The end of the range. Defaults to None.</span>
 
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Modification</span>
-<span class="sd">            Created modification object</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Modification: The created modification object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">cleaned_mod_str</span><span class="p">,</span> <span class="n">placement_controls</span> <span class="o">=</span> <span class="n">ProFormaParser</span><span class="o">.</span><span class="n">_parse_placement_controls</span><span class="p">(</span>
             <span class="n">mod_str</span>
@@ -946,17 +905,21 @@
 <div class="viewcode-block" id="SequenceAmbiguity">
 <a class="viewcode-back" href="../../proforma.html#sequal.proforma.SequenceAmbiguity">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">SequenceAmbiguity</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents ambiguity in the amino acid sequence.&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Represents ambiguity in the amino acid sequence.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        value (str): The ambiguous sequence possibilities.</span>
+<span class="sd">        position (int): The position in the sequence where ambiguity occurs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">position</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a sequence ambiguity.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes a sequence ambiguity.</span>
 
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        value : str</span>
-<span class="sd">            The ambiguous sequence possibilities</span>
-<span class="sd">        position : int</span>
-<span class="sd">            The position in the sequence where ambiguity occurs</span>
+<span class="sd">        Args:</span>
+<span class="sd">            value (str): The ambiguous sequence possibilities.</span>
+<span class="sd">            position (int): The position in the sequence where ambiguity occurs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">position</span> <span class="o">=</span> <span class="n">position</span>
