@@ -213,8 +213,19 @@ class ProFormaParser:
 
         i = 0
         while i < len(proforma_str) and proforma_str[i] == "{":
-            j = proforma_str.find("}", i)
-            if j == -1:
+            # Find matching closing brace, handling nested braces
+            brace_level = 0
+            j = i
+            while j < len(proforma_str):
+                if proforma_str[j] == "{":
+                    brace_level += 1
+                elif proforma_str[j] == "}":
+                    brace_level -= 1
+                    if brace_level == 0:
+                        break
+                j += 1
+
+            if j == len(proforma_str):
                 raise ValueError(f"Unclosed curly brace at position {i}")
 
             mod_str = proforma_str[i + 1 : j]

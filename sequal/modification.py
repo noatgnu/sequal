@@ -304,21 +304,50 @@ class Modification(BaseBlock):
         glycan_clean = glycan.replace(" ", "")
         monos = list(monosaccharides)
         monos.sort(key=len, reverse=True)
-        mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
+        mono_pattern = (
+            r"^("
+            + "|".join(re.escape(m) for m in monos)
+            + r")((\(([1-9]\d*)\))|[1-9]\d*)?"
+        )
         i = 0
         while i < len(glycan_clean):
             if glycan_clean[i] == "{":
                 close_brace = glycan_clean.find("}", i)
                 if close_brace == -1:
                     return False
+
                 i = close_brace + 1
-                while i < len(glycan_clean) and glycan_clean[i].isdigit():
-                    i += 1
+                is_at_end = i == len(glycan_clean)
+
+                if i < len(glycan_clean) and glycan_clean[i] == "(":
+                    close_paren = glycan_clean.find(")", i)
+                    if close_paren == -1:
+                        return False
+                    count_str = glycan_clean[i + 1 : close_paren]
+                    if not re.match(r"^[1-9]\d*$", count_str):
+                        return False
+                    i = close_paren + 1
+                elif i < len(glycan_clean) and glycan_clean[i].isdigit():
+                    start = i
+                    while i < len(glycan_clean) and glycan_clean[i].isdigit():
+                        i += 1
+                    count_str = glycan_clean[start:i]
+                    if not re.match(r"^[1-9]\d*$", count_str):
+                        return False
+                elif not is_at_end:
+                    return False
             else:
                 match = re.match(mono_pattern, glycan_clean[i:])
                 if not match:
                     return False
-                i += len(match.group(0))
+
+                mono_length = len(match.group(0))
+                has_count = match.group(2) is not None and match.group(2) != ""
+                i += mono_length
+
+                is_at_end = i == len(glycan_clean)
+                if not has_count and not is_at_end:
+                    return False
 
         return i == len(glycan_clean)
 
@@ -1063,7 +1092,7 @@ class ModificationValue:
                 is_valid_formula = False
                 if self._source.upper() == "FORMULA":
                     is_valid_formula = self._validate_formula(self._primary_value)
-                elif self._source.upper() == "GlYCAN":
+                elif self._source.upper() == "GLYCAN":
                     is_valid_glycan = self._validate_glycan(self._primary_value)
                 if "#" in self._primary_value:
                     pv_parts = self._primary_value.split("#", 1)
@@ -1323,7 +1352,7 @@ class ModificationValue:
                     is_valid_formula = False
                     if source.upper() == "FORMULA":
                         is_valid_formula = self._validate_formula(value)
-                    elif source.upper() == "GlYCAN":
+                    elif source.upper() == "GLYCAN":
                         is_valid_glycan = self._validate_glycan(value)
                     if source in ["XL", "XLMOD", "XL-MOD", "X"]:
                         pipe_val = PipeValue(value, PipeValue.CROSSLINK, component)
@@ -1707,7 +1736,11 @@ class ModificationValue:
 
         monos = list(monosaccharides)
         monos.sort(key=len, reverse=True)
-        mono_pattern = r"^(" + "|".join(re.escape(m) for m in monos) + r")(\d+)?"
+        mono_pattern = (
+            r"^("
+            + "|".join(re.escape(m) for m in monos)
+            + r")((\(([1-9]\d*)\))|[1-9]\d*)?"
+        )
 
         i = 0
         while i < len(glycan_clean):
@@ -1715,14 +1748,39 @@ class ModificationValue:
                 close_brace = glycan_clean.find("}", i)
                 if close_brace == -1:
                     return False
+
                 i = close_brace + 1
-                while i < len(glycan_clean) and glycan_clean[i].isdigit():
-                    i += 1
+                is_at_end = i == len(glycan_clean)
+
+                if i < len(glycan_clean) and glycan_clean[i] == "(":
+                    close_paren = glycan_clean.find(")", i)
+                    if close_paren == -1:
+                        return False
+                    count_str = glycan_clean[i + 1 : close_paren]
+                    if not re.match(r"^[1-9]\d*$", count_str):
+                        return False
+                    i = close_paren + 1
+                elif i < len(glycan_clean) and glycan_clean[i].isdigit():
+                    start = i
+                    while i < len(glycan_clean) and glycan_clean[i].isdigit():
+                        i += 1
+                    count_str = glycan_clean[start:i]
+                    if not re.match(r"^[1-9]\d*$", count_str):
+                        return False
+                elif not is_at_end:
+                    return False
             else:
                 match = re.match(mono_pattern, glycan_clean[i:])
                 if not match:
                     return False
-                i += len(match.group(0))
+
+                mono_length = len(match.group(0))
+                has_count = match.group(2) is not None and match.group(2) != ""
+                i += mono_length
+
+                is_at_end = i == len(glycan_clean)
+                if not has_count and not is_at_end:
+                    return False
 
         return i == len(glycan_clean)
 
