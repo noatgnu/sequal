@@ -1094,6 +1094,7 @@ class ModificationValue:
                     is_valid_formula = self._validate_formula(self._primary_value)
                 elif self._source.upper() == "GLYCAN":
                     is_valid_glycan = self._validate_glycan(self._primary_value)
+
                 if "#" in self._primary_value:
                     pv_parts = self._primary_value.split("#", 1)
                     self._primary_value = pv_parts[0]
@@ -1343,17 +1344,23 @@ class ModificationValue:
             if parts[0] in self.KNOWN_SOURCES:
                 source = parts[0]
                 value = parts[1]
+                is_valid_glycan = False
+                is_valid_formula = False
+                if source.upper() == "FORMULA":
+                    is_valid_formula = self._validate_formula(value)
+                elif source.upper() == "GLYCAN":
+                    is_valid_glycan = self._validate_glycan(value)
 
                 # Handle crosslinks or ambiguity in value
                 if "#" in value:
                     pv_parts = value.split("#", 1)
                     value = pv_parts[0]
-                    is_valid_glycan = False
-                    is_valid_formula = False
+                    # Recalculate if value changed due to # split
                     if source.upper() == "FORMULA":
                         is_valid_formula = self._validate_formula(value)
                     elif source.upper() == "GLYCAN":
                         is_valid_glycan = self._validate_glycan(value)
+
                     if source in ["XL", "XLMOD", "XL-MOD", "X"]:
                         pipe_val = PipeValue(value, PipeValue.CROSSLINK, component)
                         pipe_val.source = source
@@ -1366,7 +1373,7 @@ class ModificationValue:
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = is_valid_glycan
-                    elif source.upper() == "GNO" or self._source.upper() == "G":
+                    elif source.upper() == "GNO" or source.upper() == "G":
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = True
@@ -1383,7 +1390,7 @@ class ModificationValue:
                         elif is_valid_formula:
                             pipe_val.is_valid_formula = is_valid_formula
                             pipe_val.assign_type("formula")
-                        if source.upper() == "GNO" or self._source.upper() == "G":
+                        if source.upper() == "GNO" or source.upper() == "G":
                             pipe_val.is_valid_glycan = True
                             pipe_val.assign_type("glycan")
                         pipe_val.ambiguity_group = pv_parts[1]
@@ -1413,15 +1420,15 @@ class ModificationValue:
                     elif source.upper() == "OBS":
                         pipe_val = PipeValue(value, PipeValue.OBSERVED_MASS, component)
                         pipe_val.observed_mass = float(value)
-                    elif self._source.upper() == "GLYCAN":
+                    elif source.upper() == "GLYCAN":
                         pipe_val = PipeValue(parts[1], PipeValue.GLYCAN, value)
                         pipe_val.source = parts[0]
                         pipe_val.is_valid_glycan = is_valid_glycan
-                    elif source.upper() == "GNO" or self._source.upper() == "G":
+                    elif source.upper() == "GNO" or source.upper() == "G":
                         pipe_val = PipeValue(value, PipeValue.GLYCAN, component)
                         pipe_val.source = source
                         pipe_val.is_valid_glycan = True
-                    elif self._source.upper() == "FORMULA":
+                    elif source.upper() == "FORMULA":
                         pipe_val = PipeValue(parts[1], PipeValue.FORMULA, value)
                         pipe_val.source = parts[0]
                         pipe_val.is_valid_formula = is_valid_formula
